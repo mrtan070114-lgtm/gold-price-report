@@ -56,23 +56,23 @@ body::after {
   pointer-events: none;
   border-radius: 999px;
   filter: blur(46px);
-  opacity: 0.78;
+  opacity: 0.64;
 }
 
 body::before {
-  width: 360px;
-  height: 360px;
+  width: 320px;
+  height: 320px;
   left: -90px;
   top: 18vh;
-  background: rgba(14, 165, 233, 0.32);
+  background: rgba(14, 165, 233, 0.28);
 }
 
 body::after {
-  width: 430px;
-  height: 430px;
-  right: -130px;
-  bottom: -120px;
-  background: rgba(236, 72, 153, 0.26);
+  width: 400px;
+  height: 400px;
+  right: -110px;
+  bottom: -130px;
+  background: rgba(236, 72, 153, 0.22);
 }
 
 button,
@@ -92,15 +92,15 @@ input {
 
 .page::before {
   content: "";
-  position: fixed;
+  position: absolute;
   z-index: -1;
-  width: 300px;
-  height: 300px;
+  width: 260px;
+  height: 260px;
   left: 58%;
-  top: 32%;
+  top: 28%;
   border-radius: 999px;
-  background: rgba(124, 58, 237, 0.20);
-  filter: blur(48px);
+  background: rgba(124, 58, 237, 0.16);
+  filter: blur(42px);
   pointer-events: none;
 }
 
