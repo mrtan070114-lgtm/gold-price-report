@@ -16,7 +16,13 @@ from uuid import uuid4
 from flask import Flask, abort, jsonify, render_template, request, send_file
 from werkzeug.wsgi import ClosingIterator
 
-from scripts.exchange_report import build_workbook, collect_exchange_data
+from scripts.exchange_report import (
+    build_pair_excel_report,
+    build_pair_word_report,
+    build_workbook,
+    collect_exchange_data,
+    collect_exchange_rate_pair,
+)
 from scripts.gold_report import build_docx_report, fetch_market_data
 
 
@@ -218,6 +224,52 @@ def generate_report(report_type: str):
         return jsonify({"ok": True, "file": info})
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 500
+
+
+@app.post("/api/exchange-rate")
+def exchange_rate():
+    try:
+        payload = request.get_json(silent=True) or {}
+        data = collect_exchange_rate_pair(
+            payload.get("from", "USD"),
+            payload.get("to", "CNY"),
+            payload.get("period", "realtime"),
+        )
+        return jsonify({"success": True, "data": data})
+    except Exception as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+
+
+@app.post("/api/exchange-report")
+def exchange_report():
+    try:
+        payload = request.get_json(silent=True) or {}
+        report_format = (payload.get("format") or "excel").strip().lower()
+        data = collect_exchange_rate_pair(
+            payload.get("from", "USD"),
+            payload.get("to", "CNY"),
+            payload.get("period", "realtime"),
+        )
+
+        ensure_tmp_dir()
+        if report_format == "excel":
+            output_path = build_pair_excel_report(data, output_dir=TMP_DIR)
+        elif report_format == "word":
+            output_path = build_pair_word_report(data, output_dir=TMP_DIR)
+        else:
+            return jsonify({"success": False, "error": "format 只能是 excel 或 word"}), 400
+
+        info = register_report(output_path)
+        return jsonify(
+            {
+                "success": True,
+                "filename": info["filename"],
+                "download_url": info["download_url"],
+                "file": info,
+            }
+        )
+    except Exception as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
 
 
 @app.get("/api/file/<file_id>")

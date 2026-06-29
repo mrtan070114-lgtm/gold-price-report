@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Optional
 
 import requests
+from docx import Document
 from openpyxl import Workbook
 from openpyxl.formatting.rule import CellIsRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -38,6 +39,21 @@ CURRENCY_NAMES = {
     "MYR": "马来西亚币",
     "SGD": "新加坡元",
 }
+PERIOD_DAYS = {
+    "realtime": 0,
+    "1D": 1,
+    "1W": 7,
+    "1M": 30,
+    "3M": 90,
+}
+PERIOD_LABELS = {
+    "realtime": "实时",
+    "1D": "1日",
+    "1W": "1周",
+    "1M": "1个月",
+    "3M": "3个月",
+}
+SOURCE_NAME = "Frankfurter.app（欧洲央行公开汇率数据）"
 
 
 @dataclass
@@ -131,6 +147,83 @@ def pct_change(current: float, previous: float) -> Optional[float]:
     return current / previous - 1
 
 
+def normalize_currency(value: str) -> str:
+    """规范化币种代码。"""
+
+    return (value or "").strip().upper()
+
+
+def validate_pair(base: str, quote: str) -> tuple[str, str]:
+    """检查用户选择的货币对是否合法。"""
+
+    base = normalize_currency(base)
+    quote = normalize_currency(quote)
+    if base not in CURRENCIES:
+        raise ValueError(f"不支持的基准货币：{base}")
+    if quote not in CURRENCIES:
+        raise ValueError(f"不支持的目标货币：{quote}")
+    if base == quote:
+        raise ValueError("基准货币和目标货币不能相同")
+    return base, quote
+
+
+def validate_period(period: str) -> str:
+    """检查时间范围是否合法。"""
+
+    period = (period or "realtime").strip()
+    if period not in PERIOD_DAYS:
+        raise ValueError(f"不支持的时间范围：{period}")
+    return period
+
+
+def collect_exchange_rate_pair(base: str, quote: str, period: str = "realtime") -> dict:
+    """只查询单个货币对，不生成任何文档。"""
+
+    base, quote = validate_pair(base, quote)
+    period = validate_period(period)
+
+    session = build_session()
+    network_ok, network_message = check_network(session)
+    print(network_message)
+    if not network_ok:
+        print("网络预检查失败，继续尝试访问汇率接口...")
+
+    today = datetime.now().date()
+    current = fetch_usd_snapshot(session, "当前", today)
+    current_rate = cross_rate(current, base, quote)
+
+    start_snapshot = None
+    start_rate = None
+    change_amount = None
+    change_percent = None
+    requested_start_date = None
+
+    if period != "realtime":
+        requested_start_date = today - timedelta(days=PERIOD_DAYS[period])
+        start_snapshot = fetch_usd_snapshot(session, PERIOD_LABELS[period], requested_start_date)
+        start_rate = cross_rate(start_snapshot, base, quote)
+        change_amount = current_rate - start_rate
+        change_percent = pct_change(current_rate, start_rate)
+
+    return {
+        "base": base,
+        "quote": quote,
+        "pair": f"{base}/{quote}",
+        "period": period,
+        "period_label": PERIOD_LABELS[period],
+        "current_rate": current_rate,
+        "start_rate": start_rate,
+        "change_amount": change_amount,
+        "change_percent": change_percent,
+        "requested_current_date": today.isoformat(),
+        "current_date": current.data_date,
+        "requested_start_date": requested_start_date.isoformat() if requested_start_date else None,
+        "start_date": start_snapshot.data_date if start_snapshot else None,
+        "source": SOURCE_NAME,
+        "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+
 def collect_exchange_data() -> tuple[list[dict], list[RateSnapshot], str]:
     """抓取汇率数据，并整理成报表行。"""
 
@@ -178,7 +271,133 @@ def collect_exchange_data() -> tuple[list[dict], list[RateSnapshot], str]:
             }
         )
 
-    return rows, snapshots, "Frankfurter.app（欧洲央行公开汇率数据）"
+    return rows, snapshots, SOURCE_NAME
+
+
+def pair_report_filename(data: dict, suffix: str) -> str:
+    """生成单货币对报表文件名。"""
+
+    now = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    return f"汇率报表_{data['base']}_{data['quote']}_{data['period']}_{now}{suffix}"
+
+
+def build_pair_excel_report(data: dict, output_dir: Optional[Path] = None) -> Path:
+    """生成单个货币对 Excel 报表。"""
+
+    target_dir = Path(output_dir) if output_dir else REPORT_DIR
+    target_dir.mkdir(parents=True, exist_ok=True)
+    output_path = target_dir / pair_report_filename(data, ".xlsx")
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "汇率查询"
+    note_ws = wb.create_sheet("说明")
+
+    ws.merge_cells("A1:B1")
+    ws["A1"] = "汇率查询报表"
+    style_title_cell(ws["A1"])
+    ws.row_dimensions[1].height = 28
+
+    rows = [
+        ("基准货币", f"{data['base']} {CURRENCY_NAMES[data['base']]}"),
+        ("目标货币", f"{data['quote']} {CURRENCY_NAMES[data['quote']]}"),
+        ("时间范围", data["period_label"]),
+        ("当前汇率", data["current_rate"]),
+        ("起始汇率", data["start_rate"] if data["start_rate"] is not None else "实时查询不适用"),
+        ("涨跌金额", data["change_amount"] if data["change_amount"] is not None else "实时查询不适用"),
+        ("涨跌百分比", data["change_percent"] if data["change_percent"] is not None else "实时查询不适用"),
+        ("当前数据日期", data["current_date"]),
+        ("起始数据日期", data["start_date"] or "实时查询不适用"),
+        ("数据来源", data["source"]),
+        ("数据更新时间", data["updated_at"]),
+    ]
+
+    ws["A3"] = "指标"
+    ws["B3"] = "数值"
+    style_header_row(ws, 3, 1, 2)
+
+    for row_index, (label, value) in enumerate(rows, start=4):
+        ws.cell(row=row_index, column=1, value=label)
+        ws.cell(row=row_index, column=2, value=value)
+
+    for row_index in range(4, 15):
+        ws.cell(row=row_index, column=1).font = Font(name="Arial", bold=True)
+    for row_index in [7, 8, 9]:
+        if isinstance(ws.cell(row=row_index, column=2).value, (int, float)):
+            ws.cell(row=row_index, column=2).number_format = "0.000000"
+    if isinstance(ws["B10"].value, (int, float)):
+        ws["B10"].number_format = "0.00%"
+    ws.column_dimensions["A"].width = 18
+    ws.column_dimensions["B"].width = 42
+
+    note_ws["A1"] = "说明"
+    style_title_cell(note_ws["A1"])
+    notes = [
+        ("当前汇率", f"表示 1 {data['base']} 可兑换多少 {data['quote']}。"),
+        ("起始汇率", "当时间范围不是实时查询时，使用所选时间范围起点附近的公开汇率数据。"),
+        ("涨跌金额", "涨跌金额 = 当前汇率 - 起始汇率。"),
+        ("涨跌百分比", "涨跌百分比 = 当前汇率 / 起始汇率 - 1。"),
+        ("数据来源", data["source"]),
+    ]
+    for row_index, (label, text) in enumerate(notes, start=3):
+        note_ws.cell(row=row_index, column=1, value=label)
+        note_ws.cell(row=row_index, column=2, value=text)
+        note_ws.cell(row=row_index, column=1).font = Font(name="Arial", bold=True)
+    note_ws.column_dimensions["A"].width = 16
+    note_ws.column_dimensions["B"].width = 70
+
+    for sheet in [ws, note_ws]:
+        set_common_sheet_style(sheet)
+
+    wb.save(output_path)
+    return output_path
+
+
+def build_pair_word_report(data: dict, output_dir: Optional[Path] = None) -> Path:
+    """生成单个货币对 Word 报表。"""
+
+    target_dir = Path(output_dir) if output_dir else REPORT_DIR
+    target_dir.mkdir(parents=True, exist_ok=True)
+    output_path = target_dir / pair_report_filename(data, ".docx")
+
+    document = Document()
+    title = document.add_heading("汇率查询报表", level=0)
+    title.alignment = 1
+
+    document.add_paragraph(f"生成时间：{data['updated_at']}")
+    document.add_paragraph(f"数据来源：{data['source']}")
+
+    table = document.add_table(rows=1, cols=2)
+    table.style = "Table Grid"
+    header_cells = table.rows[0].cells
+    header_cells[0].text = "指标"
+    header_cells[1].text = "数值"
+
+    def add_row(label: str, value: object) -> None:
+        row_cells = table.add_row().cells
+        row_cells[0].text = label
+        row_cells[1].text = "" if value is None else str(value)
+
+    add_row("基准货币", f"{data['base']} {CURRENCY_NAMES[data['base']]}")
+    add_row("目标货币", f"{data['quote']} {CURRENCY_NAMES[data['quote']]}")
+    add_row("时间范围", data["period_label"])
+    add_row("当前汇率", f"{data['current_rate']:.6f}")
+    add_row("起始汇率", f"{data['start_rate']:.6f}" if data["start_rate"] is not None else "实时查询不适用")
+    add_row("涨跌金额", f"{data['change_amount']:.6f}" if data["change_amount"] is not None else "实时查询不适用")
+    add_row("涨跌百分比", f"{data['change_percent']:.2%}" if data["change_percent"] is not None else "实时查询不适用")
+    add_row("当前数据日期", data["current_date"])
+    add_row("起始数据日期", data["start_date"] or "实时查询不适用")
+    add_row("数据更新时间", data["updated_at"])
+
+    document.add_heading("说明", level=1)
+    document.add_paragraph(f"当前汇率表示 1 {data['base']} 可兑换多少 {data['quote']}。")
+    if data["period"] != "realtime":
+        document.add_paragraph("涨跌金额 = 当前汇率 - 起始汇率。")
+        document.add_paragraph("涨跌百分比 = 当前汇率 / 起始汇率 - 1。")
+    document.add_paragraph("本报表仅供参考，不构成投资建议。")
+
+    document.save(output_path)
+    return output_path
 
 
 def style_title_cell(cell) -> None:

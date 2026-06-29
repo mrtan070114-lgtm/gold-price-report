@@ -11,42 +11,122 @@
       <section class="panel">
         <div class="heading">
           <p class="eyebrow">Web 报表工具</p>
-          <h1>报表生成器</h1>
-          <p class="summary">点击按钮后，服务器生成 Word 或 Excel 文件，并提供临时下载链接。</p>
+          <h1>汇率查询与报表下载</h1>
+          <p class="summary">可以只在线查询汇率，也可以生成 Word 或 Excel 报表后下载。</p>
         </div>
 
-        <div class="actions" aria-label="生成报表">
-          <button class="primary" data-report="exchange">生成汇率 Excel 报表</button>
-          <button class="secondary" data-report="gold">生成金价 Word 报表</button>
-        </div>
+        <section class="tool-section" aria-labelledby="exchange-title">
+          <h2 id="exchange-title">汇率查询</h2>
 
-        <div class="status" id="status" role="status">等待生成报表。</div>
-        <div class="client-hint" id="client-hint" hidden></div>
+          <div class="form-grid">
+            <label>
+              <span>From 基准货币</span>
+              <select id="from-currency">
+                <option value="USD">USD 美元</option>
+                <option value="CNY">CNY 人民币</option>
+                <option value="MYR">MYR 马来西亚币</option>
+                <option value="SGD">SGD 新加坡元</option>
+              </select>
+            </label>
 
-        <section class="result" id="result" hidden>
-          <div class="result-main">
-            <span class="label">文件名</span>
-            <strong id="filename">-</strong>
+            <label>
+              <span>To 目标货币</span>
+              <select id="to-currency">
+                <option value="CNY">CNY 人民币</option>
+                <option value="USD">USD 美元</option>
+                <option value="MYR">MYR 马来西亚币</option>
+                <option value="SGD">SGD 新加坡元</option>
+              </select>
+            </label>
+
+            <label>
+              <span>时间范围</span>
+              <select id="period">
+                <option value="realtime">实时</option>
+                <option value="1D">1日</option>
+                <option value="1W">1周</option>
+                <option value="1M" selected>1个月</option>
+                <option value="3M">3个月</option>
+              </select>
+            </label>
+
+            <label>
+              <span>报表格式</span>
+              <select id="report-format">
+                <option value="excel" selected>Excel</option>
+                <option value="word">Word</option>
+              </select>
+            </label>
           </div>
-          <div class="meta-grid">
-            <div>
-              <span class="label">文件大小</span>
-              <span id="filesize">-</span>
-            </div>
-            <div>
-              <span class="label">剩余有效时间</span>
-              <span id="remaining">-</span>
-            </div>
+
+          <fieldset class="choice-group">
+            <legend>查询方式</legend>
+            <label>
+              <input type="radio" name="query-mode" value="online" checked />
+              仅在线查询，不下载文档
+            </label>
+            <label>
+              <input type="radio" name="query-mode" value="report" />
+              生成并下载报表
+            </label>
+          </fieldset>
+
+          <div class="actions">
+            <button class="primary" id="query-rate" type="button">查询汇率</button>
+            <button class="secondary" id="generate-exchange-report" type="button">生成报表</button>
+            <button class="download" id="download" type="button" hidden>下载报表</button>
           </div>
-          <button class="download" id="download" type="button" disabled>下载文档</button>
-          <a class="fallback-download" id="direct-download" href="#" download target="_blank" rel="noopener" hidden>直接打开下载地址</a>
-          <div class="download-help" id="download-help" hidden>
-            <span class="label">下载地址</span>
-            <div class="copy-row">
-              <input id="download-url" type="text" readonly value="" />
-              <button class="secondary copy-button" id="copy-download-url" type="button">复制下载地址</button>
+
+          <div class="status" id="status" role="status">请选择条件后查询汇率。</div>
+          <div class="client-hint" id="client-hint" hidden></div>
+
+          <section class="rate-result" id="rate-result" hidden>
+            <h3>在线查询结果</h3>
+            <dl class="result-list">
+              <div><dt>基准货币</dt><dd id="result-base">-</dd></div>
+              <div><dt>目标货币</dt><dd id="result-quote">-</dd></div>
+              <div><dt>时间范围</dt><dd id="result-period">-</dd></div>
+              <div><dt>当前汇率</dt><dd id="result-current">-</dd></div>
+              <div class="period-only"><dt>起始汇率</dt><dd id="result-start">-</dd></div>
+              <div class="period-only"><dt>涨跌金额</dt><dd id="result-change">-</dd></div>
+              <div class="period-only"><dt>涨跌百分比</dt><dd id="result-percent">-</dd></div>
+              <div><dt>数据来源</dt><dd id="result-source">-</dd></div>
+              <div><dt>数据更新时间</dt><dd id="result-updated">-</dd></div>
+            </dl>
+          </section>
+
+          <section class="result" id="report-result" hidden>
+            <div class="result-main">
+              <span class="label">报表已生成</span>
+              <strong id="filename">-</strong>
             </div>
-            <p class="hint">如果当前浏览器没有保存文件，请把下载地址复制到 Safari 或 Chrome 打开。</p>
+            <div class="meta-grid">
+              <div>
+                <span class="label">文件大小</span>
+                <span id="filesize">-</span>
+              </div>
+              <div>
+                <span class="label">剩余有效时间</span>
+                <span id="remaining">-</span>
+              </div>
+            </div>
+            <a class="fallback-download" id="direct-download" href="#" download target="_blank" rel="noopener" hidden>直接打开下载地址</a>
+            <div class="download-help" id="download-help" hidden>
+              <span class="label">下载地址</span>
+              <div class="copy-row">
+                <input id="download-url" type="text" readonly value="" />
+                <button class="secondary copy-button" id="copy-download-url" type="button">复制下载地址</button>
+              </div>
+              <p class="hint">如果当前浏览器没有保存文件，请把下载地址复制到 Safari 或 Chrome 打开。</p>
+            </div>
+          </section>
+        </section>
+
+        <section class="tool-section legacy-section" aria-labelledby="gold-title">
+          <h2 id="gold-title">金价 Word 报表</h2>
+          <p class="summary">保留原来的金价报表功能。</p>
+          <div class="actions">
+            <button class="secondary" data-report="gold" type="button">生成金价 Word 报表</button>
           </div>
         </section>
       </section>
