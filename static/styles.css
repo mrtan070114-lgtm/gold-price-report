@@ -158,7 +158,7 @@ input {
 .eyebrow,
 .section-kicker {
   margin: 0;
-  color: #2563eb;
+  color: #ff69c3;
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -178,6 +178,7 @@ h1 {
   font-size: clamp(30px, 5vw, 42px);
   line-height: 1.12;
   font-weight: 850;
+  color: #ff2893;
 }
 
 h2 {
