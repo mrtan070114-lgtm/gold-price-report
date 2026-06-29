@@ -118,6 +118,16 @@ button:disabled,
   background: #fff7f5;
 }
 
+.client-hint {
+  margin-top: 12px;
+  padding: 11px 14px;
+  border: 1px solid #f0d69a;
+  border-radius: 6px;
+  color: #6f5200;
+  background: #fff9e8;
+  line-height: 1.5;
+}
+
 .result {
   margin-top: 18px;
   padding: 18px;

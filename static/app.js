@@ -9,14 +9,20 @@ const directDownloadEl = document.getElementById("direct-download");
 const downloadHelpEl = document.getElementById("download-help");
 const downloadUrlEl = document.getElementById("download-url");
 const copyDownloadUrlEl = document.getElementById("copy-download-url");
+const clientHintEl = document.getElementById("client-hint");
 
 let currentFile = null;
 let countdownTimer = null;
+const userAgent = navigator.userAgent || "";
+const isWeChatBrowser = /MicroMessenger/i.test(userAgent);
+const isMobileBrowser = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
 
 if (window.location.protocol === "file:") {
   setBusy(true);
   setStatus("当前打开的是模板文件，按钮无法连接后端。请先运行 python3 app.py，然后访问 http://127.0.0.1:5000", true);
 }
+
+renderClientHint();
 
 function setBusy(isBusy) {
   buttons.forEach((button) => {
@@ -27,6 +33,19 @@ function setBusy(isBusy) {
 function setStatus(message, isError = false) {
   statusBox.textContent = message;
   statusBox.classList.toggle("error", isError);
+}
+
+function renderClientHint() {
+  if (isWeChatBrowser) {
+    clientHintEl.textContent = "请点击右上角，在 Safari/Chrome 浏览器中打开后下载。";
+    clientHintEl.hidden = false;
+    return;
+  }
+
+  if (isMobileBrowser) {
+    clientHintEl.textContent = "如果无法直接下载，请点击浏览器分享按钮，选择存储到文件。";
+    clientHintEl.hidden = false;
+  }
 }
 
 function formatRemaining(seconds) {
@@ -107,36 +126,24 @@ async function downloadCurrentFile() {
     return;
   }
 
-  setStatus("正在准备下载...");
-  downloadEl.disabled = true;
+  if (isWeChatBrowser) {
+    setStatus("请点击右上角，在 Safari/Chrome 浏览器中打开后下载。", true);
+    return;
+  }
 
-  try {
-    const response = await fetch(currentFile.download_url);
-    if (response.status === 404 || response.status === 410) {
-      expireDownload();
-      return;
-    }
-    if (!response.ok) {
-      throw new Error(`下载接口返回 ${response.status}`);
-    }
+  const link = document.createElement("a");
+  link.href = new URL(currentFile.download_url, window.location.origin).href;
+  link.download = currentFile.filename;
+  link.rel = "noopener";
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = currentFile.filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-
-    setStatus("下载已开始。如果浏览器没有弹出下载，请点击下方备用下载链接。");
-  } catch (error) {
-    setStatus(`下载失败：${error.message}`, true);
-  } finally {
-    if (currentFile && downloadEl.textContent === "下载文档") {
-      downloadEl.disabled = false;
-    }
+  if (isMobileBrowser) {
+    setStatus("下载已开始。如果无法直接下载，请点击浏览器分享按钮，选择存储到文件。");
+  } else {
+    setStatus("下载已开始。如果浏览器没有保存文件，请点击下方直接打开下载地址。");
   }
 }
 

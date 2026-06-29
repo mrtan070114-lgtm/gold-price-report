@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import json
 import os
-import mimetypes
 import re
 import threading
 import time
@@ -14,7 +13,8 @@ from pathlib import Path
 from urllib.parse import quote
 from uuid import uuid4
 
-from flask import Flask, abort, jsonify, render_template, send_file
+from flask import Flask, abort, jsonify, render_template, request, send_file
+from werkzeug.wsgi import ClosingIterator
 
 from scripts.exchange_report import build_workbook, collect_exchange_data
 from scripts.gold_report import build_docx_report, fetch_market_data
@@ -25,8 +25,13 @@ TMP_DIR = BASE_DIR / "reports" / "tmp"
 REGISTRY_PATH = TMP_DIR / "registry.json"
 FILE_TTL_SECONDS = 10 * 60
 CLEANUP_INTERVAL_SECONDS = 60
+DELETE_AFTER_DOWNLOAD = os.environ.get("DELETE_AFTER_DOWNLOAD") == "1"
 ALLOWED_SUFFIXES = {".docx", ".xlsx"}
 FILE_ID_RE = re.compile(r"^[0-9a-f]{32}$")
+MIME_TYPES = {
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+}
 
 app = Flask(__name__)
 registry_lock = threading.Lock()
@@ -129,7 +134,7 @@ def register_report(path: Path) -> dict:
 
     expires_at = utc_now() + timedelta(seconds=FILE_TTL_SECONDS)
     size = server_path.stat().st_size
-    mimetype = mimetypes.guess_type(original_name)[0] or "application/octet-stream"
+    mimetype = MIME_TYPES.get(suffix, "application/octet-stream")
 
     item = {
         "file_id": file_id,
@@ -177,6 +182,13 @@ def get_registry_item(file_id: str) -> dict | None:
     with registry_lock:
         registry = load_registry()
         return registry.get(file_id)
+
+
+def remove_registry_item(file_id: str) -> None:
+    with registry_lock:
+        registry = load_registry()
+        if registry.pop(file_id, None) is not None:
+            save_registry(registry)
 
 
 @app.before_request
@@ -235,10 +247,11 @@ def download(file_id: str, _filename: str | None = None):
         abort(404)
     if not path.exists() or not path.is_file():
         abort(404)
+    mimetype = MIME_TYPES.get(path.suffix, item["mimetype"])
 
     response = send_file(
         path,
-        mimetype=item["mimetype"],
+        mimetype=mimetype,
         as_attachment=True,
         download_name=item["download_name"],
         conditional=False,
@@ -249,6 +262,16 @@ def download(file_id: str, _filename: str | None = None):
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+
+    if DELETE_AFTER_DOWNLOAD and request.method == "GET":
+        def delete_after_response() -> None:
+            path.unlink(missing_ok=True)
+            remove_registry_item(file_id)
+
+        response.direct_passthrough = False
+        response.response = ClosingIterator(response.response, [delete_after_response])
+
     return response
 
 
