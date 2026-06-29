@@ -1,0 +1,22 @@
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 虚拟环境
+venv/
+.venv/
+
+# 自动生成的报表
+reports/**/*.docx
+reports/**/*.xlsx
+reports/**/*.pdf
+reports/**/*.json
+
+# 允许保留空文件夹标记
+!reports/**/.gitkeep
+
+# macOS 系统文件
+.DS_Store
+
+# 环境变量/密钥
+.env

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>报表生成器</title>
+    <link rel="stylesheet" href="../static/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="panel">
+        <div class="heading">
+          <p class="eyebrow">Web 报表工具</p>
+          <h1>报表生成器</h1>
+          <p class="summary">点击按钮后，服务器生成 Word 或 Excel 文件，并提供临时下载链接。</p>
+        </div>
+
+        <div class="actions" aria-label="生成报表">
+          <button class="primary" data-report="exchange">生成汇率 Excel 报表</button>
+          <button class="secondary" data-report="gold">生成金价 Word 报表</button>
+        </div>
+
+        <div class="status" id="status" role="status">等待生成报表。</div>
+
+        <section class="result" id="result" hidden>
+          <div class="result-main">
+            <span class="label">文件名</span>
+            <strong id="filename">-</strong>
+          </div>
+          <div class="meta-grid">
+            <div>
+              <span class="label">文件大小</span>
+              <span id="filesize">-</span>
+            </div>
+            <div>
+              <span class="label">剩余有效时间</span>
+              <span id="remaining">-</span>
+            </div>
+          </div>
+          <button class="download" id="download" type="button" disabled>下载文档</button>
+          <a class="fallback-download" id="direct-download" href="#" download target="_blank" rel="noopener" hidden>直接打开下载地址</a>
+          <div class="download-help" id="download-help" hidden>
+            <span class="label">下载地址</span>
+            <div class="copy-row">
+              <input id="download-url" type="text" readonly value="" />
+              <button class="secondary copy-button" id="copy-download-url" type="button">复制下载地址</button>
+            </div>
+            <p class="hint">如果当前浏览器没有保存文件，请把下载地址复制到 Safari 或 Chrome 打开。</p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      window.REPORT_TTL_SECONDS = Number("{{ ttl_seconds|default(600) }}".replace(/\D/g, "")) || 600;
+    </script>
+    <script src="../static/app.js"></script>
+  </body>
+</html>
