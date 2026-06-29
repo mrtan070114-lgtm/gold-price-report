@@ -15,7 +15,7 @@
           <p class="summary">可以只在线查询汇率，也可以生成 Word 或 Excel 报表后下载。</p>
         </div>
 
-        <section class="tool-section" aria-labelledby="exchange-title">
+        <section class="tool-section module-card" aria-labelledby="exchange-title">
           <h2 id="exchange-title">汇率查询</h2>
 
           <div class="form-grid">
@@ -50,7 +50,7 @@
               </select>
             </label>
 
-            <label>
+            <label id="report-format-field">
               <span>报表格式</span>
               <select id="report-format">
                 <option value="excel" selected>Excel</option>
@@ -81,7 +81,14 @@
           <div class="client-hint" id="client-hint" hidden></div>
 
           <section class="rate-result" id="rate-result" hidden>
-            <h3>在线查询结果</h3>
+            <div class="result-card-heading">
+              <h3>查询结果</h3>
+              <span class="trend-badge neutral" id="result-trend">-</span>
+            </div>
+            <div class="rate-highlight">
+              <span class="label">当前汇率</span>
+              <strong id="result-current-highlight">-</strong>
+            </div>
             <dl class="result-list">
               <div><dt>基准货币</dt><dd id="result-base">-</dd></div>
               <div><dt>目标货币</dt><dd id="result-quote">-</dd></div>
@@ -122,7 +129,7 @@
           </section>
         </section>
 
-        <section class="tool-section legacy-section" aria-labelledby="gold-title">
+        <section class="tool-section module-card legacy-section" aria-labelledby="gold-title">
           <h2 id="gold-title">金价 Word 报表</h2>
           <p class="summary">保留原来的金价报表功能。</p>
           <div class="actions">

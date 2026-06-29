@@ -1,6 +1,7 @@
 const fromCurrencyEl = document.getElementById("from-currency");
 const toCurrencyEl = document.getElementById("to-currency");
 const periodEl = document.getElementById("period");
+const reportFormatFieldEl = document.getElementById("report-format-field");
 const reportFormatEl = document.getElementById("report-format");
 const queryRateEl = document.getElementById("query-rate");
 const generateExchangeReportEl = document.getElementById("generate-exchange-report");
@@ -14,6 +15,8 @@ const resultBaseEl = document.getElementById("result-base");
 const resultQuoteEl = document.getElementById("result-quote");
 const resultPeriodEl = document.getElementById("result-period");
 const resultCurrentEl = document.getElementById("result-current");
+const resultCurrentHighlightEl = document.getElementById("result-current-highlight");
+const resultTrendEl = document.getElementById("result-trend");
 const resultStartEl = document.getElementById("result-start");
 const resultChangeEl = document.getElementById("result-change");
 const resultPercentEl = document.getElementById("result-percent");
@@ -42,6 +45,7 @@ if (window.location.protocol === "file:") {
 }
 
 renderClientHint();
+syncModeUI();
 
 function setBusy(isBusy) {
   queryRateEl.disabled = isBusy;
@@ -78,6 +82,21 @@ function setSelectedMode(mode) {
   if (option) {
     option.checked = true;
   }
+  syncModeUI();
+}
+
+function syncModeUI() {
+  const mode = getSelectedMode();
+  const isReportMode = mode === "report";
+  reportFormatFieldEl.hidden = !isReportMode;
+  queryRateEl.hidden = isReportMode;
+  generateExchangeReportEl.hidden = !isReportMode;
+
+  if (!isReportMode) {
+    clearReport();
+  } else if (!currentFile) {
+    downloadEl.hidden = true;
+  }
 }
 
 function getExchangePayload() {
@@ -108,6 +127,21 @@ function formatSignedRate(value) {
     return "-";
   }
   return `${value >= 0 ? "+" : ""}${value.toFixed(6)}`;
+}
+
+function describeTrend(data) {
+  if (data.period === "realtime" || typeof data.change_percent !== "number") {
+    return { text: "实时查询", className: "neutral" };
+  }
+
+  const threshold = 0.0001;
+  if (data.change_percent > threshold) {
+    return { text: "上涨", className: "up" };
+  }
+  if (data.change_percent < -threshold) {
+    return { text: "下跌", className: "down" };
+  }
+  return { text: "波动较小", className: "neutral" };
 }
 
 function formatRemaining(seconds) {
@@ -150,8 +184,13 @@ function renderRateResult(data) {
   resultQuoteEl.textContent = data.quote;
   resultPeriodEl.textContent = data.period_label;
   resultCurrentEl.textContent = formatRate(data.current_rate);
+  resultCurrentHighlightEl.textContent = formatRate(data.current_rate);
   resultSourceEl.textContent = data.source;
   resultUpdatedEl.textContent = data.updated_at;
+
+  const trend = describeTrend(data);
+  resultTrendEl.textContent = trend.text;
+  resultTrendEl.className = `trend-badge ${trend.className}`;
 
   const isRealtime = data.period === "realtime";
   periodOnlyEls.forEach((el) => {
@@ -206,6 +245,12 @@ async function queryExchangeRate() {
   setBusy(true);
   setStatus("正在查询汇率...");
 
+  if (fromCurrencyEl.value === toCurrencyEl.value) {
+    setBusy(false);
+    setStatus("基准货币和目标货币不能相同。", true);
+    return;
+  }
+
   try {
     const response = await fetch("/api/exchange-rate", {
       method: "POST",
@@ -219,7 +264,7 @@ async function queryExchangeRate() {
     renderRateResult(payload.data);
     setStatus("汇率查询完成。");
   } catch (error) {
-    setStatus(`查询失败：${error.message}`, true);
+    setStatus("服务连接失败，请刷新页面或稍后重试。", true);
   } finally {
     setBusy(false);
   }
@@ -229,6 +274,12 @@ async function generateExchangeReport() {
   setSelectedMode("report");
   setBusy(true);
   setStatus("正在生成报表...");
+
+  if (fromCurrencyEl.value === toCurrencyEl.value) {
+    setBusy(false);
+    setStatus("基准货币和目标货币不能相同。", true);
+    return;
+  }
 
   try {
     const response = await fetch("/api/exchange-report", {
@@ -248,7 +299,7 @@ async function generateExchangeReport() {
     });
     setStatus("报表已生成，点击下载报表。");
   } catch (error) {
-    setStatus(`生成失败：${error.message}`, true);
+    setStatus("服务连接失败，请刷新页面或稍后重试。", true);
   } finally {
     setBusy(false);
   }
@@ -267,7 +318,7 @@ async function generateLegacyReport(reportType) {
     renderFile(payload.file);
     setStatus("报表已生成，点击下载报表。");
   } catch (error) {
-    setStatus(`生成失败：${error.message}`, true);
+    setStatus("服务连接失败，请刷新页面或稍后重试。", true);
   } finally {
     setBusy(false);
   }
@@ -321,6 +372,10 @@ queryRateEl.addEventListener("click", queryExchangeRate);
 generateExchangeReportEl.addEventListener("click", generateExchangeReport);
 downloadEl.addEventListener("click", downloadCurrentFile);
 copyDownloadUrlEl.addEventListener("click", copyDownloadUrl);
+
+document.querySelectorAll("input[name='query-mode']").forEach((option) => {
+  option.addEventListener("change", syncModeUI);
+});
 
 legacyReportButtons.forEach((button) => {
   button.addEventListener("click", () => generateLegacyReport(button.dataset.report));

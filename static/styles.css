@@ -7,8 +7,11 @@
   --line: #d8e0e8;
   --accent: #136f63;
   --accent-dark: #0e574e;
+  --success: #188038;
+  --success-dark: #11652b;
   --danger: #a33a2d;
   --disabled: #aab4be;
+  --warning: #8a6500;
 }
 
 * {
@@ -59,11 +62,13 @@ h1 {
 
 .tool-section {
   margin-top: 26px;
+  padding-top: 4px;
 }
 
 .tool-section + .tool-section {
   border-top: 1px solid var(--line);
-  padding-top: 22px;
+  margin-top: 30px;
+  padding-top: 26px;
 }
 
 h2 {
@@ -148,20 +153,31 @@ button,
   justify-content: center;
 }
 
-.primary,
-.download {
+.primary {
   background: var(--accent);
   color: #fff;
 }
 
-.primary:hover,
-.download:hover {
+.primary:hover {
   background: var(--accent-dark);
 }
 
 .secondary {
   background: #e8eef3;
   color: var(--text);
+}
+
+.secondary:hover {
+  background: #dbe5ed;
+}
+
+.download {
+  background: var(--success);
+  color: #fff;
+}
+
+.download:hover {
+  background: var(--success-dark);
 }
 
 button:disabled,
@@ -210,6 +226,60 @@ button:disabled,
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
+}
+
+.result-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.result-card-heading h3 {
+  margin: 0;
+}
+
+.trend-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.trend-badge.up {
+  color: #0b5f2a;
+  background: #e1f3e7;
+}
+
+.trend-badge.down {
+  color: #9c1c13;
+  background: #fde8e6;
+}
+
+.trend-badge.neutral {
+  color: #5f6670;
+  background: #eef2f5;
+}
+
+.rate-highlight {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid #cfe1dc;
+  border-radius: 8px;
+  background: #f7fbfa;
+}
+
+.rate-highlight strong {
+  color: var(--accent-dark);
+  font-size: 28px;
+  line-height: 1.15;
 }
 
 .result-list {
@@ -304,7 +374,7 @@ button:disabled,
 
 @media (max-width: 560px) {
   .panel {
-    padding: 22px;
+    padding: 18px;
   }
 
   h1 {
@@ -317,9 +387,20 @@ button:disabled,
     width: 100%;
   }
 
+  button,
+  .download,
+  select {
+    min-height: 48px;
+  }
+
   .form-grid,
   .result-list {
     grid-template-columns: 1fr;
+  }
+
+  .result-card-heading {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .copy-row {
