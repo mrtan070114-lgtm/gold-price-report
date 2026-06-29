@@ -17,13 +17,12 @@ from flask import Flask, abort, jsonify, render_template, request, send_file
 from werkzeug.wsgi import ClosingIterator
 
 from scripts.exchange_report import (
+    CURRENCIES,
+    CURRENCY_NAMES,
     build_pair_excel_report,
     build_pair_word_report,
-    build_workbook,
-    collect_exchange_data,
     collect_exchange_rate_pair,
 )
-from scripts.gold_report import build_docx_report, fetch_market_data
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -207,23 +206,17 @@ def index():
     return render_template("index.html", ttl_seconds=FILE_TTL_SECONDS)
 
 
-@app.post("/api/generate/<report_type>")
-def generate_report(report_type: str):
-    try:
-        ensure_tmp_dir()
-        if report_type == "exchange":
-            rows, snapshots, source = collect_exchange_data()
-            output_path = build_workbook(rows, snapshots, source, output_dir=TMP_DIR)
-        elif report_type == "gold":
-            data = fetch_market_data()
-            output_path = build_docx_report(data, output_dir=TMP_DIR)
-        else:
-            return jsonify({"ok": False, "error": "不支持的报表类型"}), 404
-
-        info = register_report(output_path)
-        return jsonify({"ok": True, "file": info})
-    except Exception as exc:
-        return jsonify({"ok": False, "error": str(exc)}), 500
+@app.get("/api/currencies")
+def currencies():
+    return jsonify(
+        {
+            "success": True,
+            "currencies": [
+                {"code": code, "name": CURRENCY_NAMES.get(code, code)}
+                for code in CURRENCIES
+            ],
+        }
+    )
 
 
 @app.post("/api/exchange-rate")

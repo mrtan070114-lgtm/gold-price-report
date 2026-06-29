@@ -1,21 +1,21 @@
-# 金价 / 汇率 Web 报表生成器
+# 汇率 Web 查询与报表工具
 
-这个项目可以生成两类报表：
+这个项目提供一个可部署到 Web 的汇率工具：
 
-- 金价 Word 报表：`.docx`
-- 汇率 Excel 报表：`.xlsx`
-
-现在支持 Web 版本：用户打开网页，点击按钮生成报表，然后通过浏览器下载到自己的电脑。
+- 在线查询 USD、CNY、MYR、SGD 之间的汇率
+- 支持实时、1日、1周、1个月、3个月、1年、3年、5年、10年时间范围
+- 显示当前汇率、起始汇率、涨跌金额、涨跌百分比
+- 可选择生成 Excel 或 Word 汇率报表
+- 支持手机端下载提示和微信内置浏览器提示
+- 支持部署到 Render
 
 ## 目录结构
 
 ```text
 gold-price-report/
 ├── app.py
-├── 生成金价报表.command
 ├── 生成汇率报表.command
 ├── scripts/
-│   ├── gold_report.py
 │   └── exchange_report.py
 ├── templates/
 │   └── index.html
@@ -23,22 +23,22 @@ gold-price-report/
 │   ├── app.js
 │   └── styles.css
 ├── reports/
-│   ├── gold/
 │   ├── exchange/
 │   └── tmp/
 ├── requirements.txt
+├── render.yaml
 └── README.md
 ```
 
 说明：
 
-- `app.py` 是 Web 服务入口。
-- `scripts/` 存放生成报表的程序。
-- `reports/gold/` 存放本地金价 Word 报表。
-- `reports/exchange/` 存放本地汇率 Excel 报表。
+- `app.py` 是 Flask Web 服务入口。
+- `scripts/exchange_report.py` 负责汇率查询、Excel 报表、Word 报表生成。
+- `templates/index.html` 是网页界面。
+- `static/` 存放前端脚本和样式。
 - `reports/tmp/` 存放 Web 用户临时生成的下载文件。
 
-## 本地运行 Web 版本
+## 本地运行
 
 进入项目文件夹：
 
@@ -64,132 +64,123 @@ python3 app.py
 http://127.0.0.1:5000
 ```
 
-页面上可以点击：
+不要直接打开 `templates/index.html`。这个文件只是 Flask 模板，直接打开时无法连接后端接口。
 
-- `生成汇率 Excel 报表`
-- `生成金价 Word 报表`
+## 页面功能
 
-生成完成后，页面会显示：
+页面只有一个核心模块：汇率查询与报表下载。
 
-- 文件名
-- 文件大小
-- 下载按钮
-- 剩余有效时间
+用户可以选择：
 
-用户点击下载后，浏览器会把文件下载到用户自己的电脑。浏览器不允许网页直接保存到用户电脑的固定路径。
+- From 基准货币
+- To 目标货币
+- 时间范围
+- 查询方式
+- 报表格式
 
-## 云部署
+查询方式有两种：
 
-这个项目可以部署到 Render、Railway、Fly.io 或普通云服务器。
+- 仅在线查询，不下载文档
+- 生成并下载报表
 
-推荐生产启动命令：
+在线查询只调用 `/api/exchange-rate`，不会生成文件，也不会写入 `reports` 文件夹。
 
-```bash
-gunicorn app:app --bind 0.0.0.0:$PORT
-```
+生成报表调用 `/api/exchange-report`，根据选择生成：
 
-如果你的平台不用 `$PORT`，可以改成固定端口，例如：
-
-```bash
-gunicorn app:app --bind 0.0.0.0:8000
-```
-
-Render 示例：
-
-```text
-Build Command: pip install -r requirements.txt
-Start Command: gunicorn app:app --bind 0.0.0.0:$PORT
-```
-
-Railway / Fly.io 也可以使用同样的启动命令。部署时不需要 `.command` 文件。
+- Excel：`.xlsx`
+- Word：`.docx`
 
 ## 下载和临时文件规则
 
 Web 版本不会把文件保存到用户电脑固定路径。流程是：
 
-1. 用户在网页点击生成按钮。
+1. 用户点击生成报表。
 2. 服务器生成 Word 或 Excel 文件。
 3. 文件先保存到 `reports/tmp/`。
-4. 服务器返回一个下载链接，例如 `/download/<file_id>`。
-5. 用户点击下载，浏览器下载文件。
+4. 服务器返回下载链接。
+5. 用户点击下载，浏览器保存文件。
 6. 文件默认保留 10 分钟。
-7. 超过 10 分钟后，服务器会自动删除临时文件。
+7. 超过 10 分钟后，服务器自动清理。
 
-下载文件名会保持清晰，例如：
+下载文件名示例：
 
 ```text
-汇率报表_2026-06-28_17-30.xlsx
-金价报表_2026-06-28_17-30.docx
+汇率报表_USD_CNY_1M_2026-06-29_12-00.xlsx
+汇率报表_USD_CNY_1M_2026-06-29_12-00.docx
 ```
 
-当前实现选择“保留 10 分钟方便重复下载”，不会在第一次下载后立即删除。过期后页面下载按钮会变灰，并提示“文件已过期，请重新生成”。
+下载接口使用 Flask `send_file`，并设置 `as_attachment=True`。
+
+## 手机端下载说明
+
+手机浏览器下载文件的行为由浏览器控制。
+
+页面会自动提示：
+
+- 普通手机浏览器：如果无法直接下载，请点击浏览器分享按钮，选择存储到文件。
+- 微信内置浏览器：请点击右上角，在 Safari/Chrome 浏览器中打开后下载。
+
+## Render 部署
+
+如果仓库根目录就是本项目目录，Render 可以直接使用：
+
+```text
+Build Command: pip install -r requirements.txt
+Start Command: gunicorn app:app
+```
+
+如果仓库根目录是上一级目录，在 Render 的 `Root Directory` 填：
+
+```text
+gold-price-report
+```
+
+项目中也提供了 `render.yaml`，可作为 Render Blueprint 使用。
 
 ## 安全规则
 
 下载接口不会暴露服务器真实文件路径。
 
-项目使用 `file_id` 映射真实临时文件：
-
-```text
-/download/<file_id>
-```
-
 安全限制：
 
-- `file_id` 必须是服务器生成的 UUID。
+- 使用 `file_id` 映射真实临时文件。
 - 只能下载 `reports/tmp/` 里的临时报表文件。
 - 只允许下载 `.docx` 和 `.xlsx`。
 - 禁止通过 `../../` 访问服务器其他文件。
 - 不能下载项目代码、配置文件或其他敏感文件。
-- 每个临时文件都有过期时间。
-- 服务器会定期清理过期文件。
+- 临时文件有过期时间并自动清理。
 
 ## 本地双击运行
 
-旧的 Mac 双击入口仍然保留，适合自己电脑本地使用：
+保留汇率本地双击入口：
 
 ```bash
-chmod +x 生成金价报表.command
 chmod +x 生成汇率报表.command
 ```
 
-双击后：
+双击后会生成本地汇率 Excel 报表，保存到：
 
-- 金价报表保存到 `reports/gold/`
-- 汇率报表保存到 `reports/exchange/`
-
-Web 部署时不依赖 `.command` 文件。
-
-## 终端运行脚本
-
-金价报表：
-
-```bash
-python3 scripts/gold_report.py
+```text
+reports/exchange/
 ```
 
-汇率报表：
-
-```bash
-python3 scripts/exchange_report.py
-```
+Web 部署不依赖 `.command` 文件。
 
 ## 常见问题
 
-### 1. 网页生成失败怎么办？
+### 1. 网页查询失败怎么办？
 
 可能原因：
 
-- 服务器无法访问外部行情接口。
-- Yahoo Finance、Swissquote、Frankfurter.app 临时不可用。
-- 云平台阻止外部网络请求。
-- 网络超时。
+- 服务器无法访问外部汇率接口。
+- Frankfurter.app 临时不可用。
+- 云平台网络请求超时。
 
-页面会显示失败原因。可以稍后重试。
+可以刷新页面或稍后重试。
 
 ### 2. 下载按钮变灰怎么办？
 
-说明服务器临时文件已经超过 10 分钟有效期，被自动删除。请重新生成报表。
+说明服务器临时文件已经超过有效期，被自动删除。请重新生成报表。
 
 ### 3. 为什么不能直接保存到用户电脑指定路径？
 
@@ -201,4 +192,4 @@ python3 scripts/exchange_report.py
 
 ## 免责声明
 
-本报表仅供参考，不构成投资建议。行情数据来自公开接口，可能存在延迟、缺失或接口变更。
+本工具仅供参考，不构成投资建议。汇率数据来自公开接口，可能存在延迟、缺失或接口变更。

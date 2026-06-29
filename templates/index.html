@@ -3,20 +3,23 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>阿心nb</title>
+    <title>汇率查询与报表下载</title>
     <link rel="stylesheet" href="../static/styles.css" />
   </head>
   <body>
     <main class="page">
-      <section class="panel">
-        <div class="heading">
-          <p class="eyebrow">Web 报表工具</p>
-          <h1>汇率查询与报表下载</h1>
-          <p class="summary">可以只在线查询汇率，也可以生成 Word 或 Excel 报表后下载。</p>
-        </div>
+      <section class="app-shell" aria-label="汇率查询与报表下载工具">
+        <section class="tool-card" aria-labelledby="exchange-title">
+          <header class="app-header">
+            <p class="eyebrow">Web 报表工具</p>
+            <h1>汇率查询与报表下载</h1>
+            <p class="summary">可以只在线查询汇率，也可以生成 Word 或 Excel 报表后下载。</p>
+          </header>
 
-        <section class="tool-section module-card" aria-labelledby="exchange-title">
-          <h2 id="exchange-title">汇率查询</h2>
+          <div class="section-heading">
+            <p class="section-kicker">Exchange Rate</p>
+            <h2 id="exchange-title">汇率查询</h2>
+          </div>
 
           <div class="form-grid">
             <label>
@@ -47,6 +50,10 @@
                 <option value="1W">1周</option>
                 <option value="1M" selected>1个月</option>
                 <option value="3M">3个月</option>
+                <option value="1Y">1年</option>
+                <option value="3Y">3年</option>
+                <option value="5Y">5年</option>
+                <option value="10Y">10年</option>
               </select>
             </label>
 
@@ -63,11 +70,11 @@
             <legend>查询方式</legend>
             <label>
               <input type="radio" name="query-mode" value="online" checked />
-              仅在线查询，不下载文档
+              <span>仅在线查询，不下载文档</span>
             </label>
             <label>
               <input type="radio" name="query-mode" value="report" />
-              生成并下载报表
+              <span>生成并下载报表</span>
             </label>
           </fieldset>
 
@@ -82,7 +89,10 @@
 
           <section class="rate-result" id="rate-result" hidden>
             <div class="result-card-heading">
-              <h3>查询结果</h3>
+              <div>
+                <p class="section-kicker">Result</p>
+                <h3>查询结果</h3>
+              </div>
               <span class="trend-badge neutral" id="result-trend">-</span>
             </div>
             <div class="rate-highlight">
@@ -127,14 +137,6 @@
               <p class="hint">如果当前浏览器没有保存文件，请把下载地址复制到 Safari 或 Chrome 打开。</p>
             </div>
           </section>
-        </section>
-
-        <section class="tool-section module-card legacy-section" aria-labelledby="gold-title">
-          <h2 id="gold-title">金价 Word 报表</h2>
-          <p class="summary">保留原来的金价报表功能。</p>
-          <div class="actions">
-            <button class="secondary" data-report="gold" type="button">生成金价 Word 报表</button>
-          </div>
         </section>
       </section>
     </main>

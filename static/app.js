@@ -5,7 +5,6 @@ const reportFormatFieldEl = document.getElementById("report-format-field");
 const reportFormatEl = document.getElementById("report-format");
 const queryRateEl = document.getElementById("query-rate");
 const generateExchangeReportEl = document.getElementById("generate-exchange-report");
-const legacyReportButtons = document.querySelectorAll("button[data-report]");
 const statusBox = document.getElementById("status");
 const clientHintEl = document.getElementById("client-hint");
 
@@ -35,6 +34,7 @@ const copyDownloadUrlEl = document.getElementById("copy-download-url");
 
 let currentFile = null;
 let countdownTimer = null;
+const successStatusPattern = /完成|已生成|下载已开始|已复制/;
 const userAgent = navigator.userAgent || "";
 const isWeChatBrowser = /MicroMessenger/i.test(userAgent);
 const isMobileBrowser = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
@@ -50,14 +50,12 @@ syncModeUI();
 function setBusy(isBusy) {
   queryRateEl.disabled = isBusy;
   generateExchangeReportEl.disabled = isBusy;
-  legacyReportButtons.forEach((button) => {
-    button.disabled = isBusy;
-  });
 }
 
 function setStatus(message, isError = false) {
   statusBox.textContent = message;
   statusBox.classList.toggle("error", isError);
+  statusBox.classList.toggle("success", !isError && successStatusPattern.test(message));
 }
 
 function renderClientHint() {
@@ -73,6 +71,21 @@ function renderClientHint() {
   }
 }
 
+function setButtonLoading(button, text) {
+  if (!button.dataset.originalText) {
+    button.dataset.originalText = button.textContent;
+  }
+  button.textContent = text;
+  button.classList.add("is-loading");
+}
+
+function clearButtonLoading(button) {
+  if (button.dataset.originalText) {
+    button.textContent = button.dataset.originalText;
+  }
+  button.classList.remove("is-loading");
+}
+
 function getSelectedMode() {
   return document.querySelector("input[name='query-mode']:checked")?.value || "online";
 }
@@ -85,6 +98,7 @@ function setSelectedMode(mode) {
   syncModeUI();
 }
 
+// 根据查询方式显示对应控件：在线查询不出现报表下载入口。
 function syncModeUI() {
   const mode = getSelectedMode();
   const isReportMode = mode === "report";
@@ -178,6 +192,7 @@ function expireDownload() {
   setStatus("文件已过期，请重新生成。", true);
 }
 
+// 渲染在线汇率结果，只更新页面，不生成任何文件。
 function renderRateResult(data) {
   rateResultEl.hidden = false;
   resultBaseEl.textContent = data.base;
@@ -239,13 +254,16 @@ function renderFile(file) {
   countdownTimer = setInterval(tick, 1000);
 }
 
+// 在线查询接口：只返回 JSON 数据，不写入 reports 文件夹。
 async function queryExchangeRate() {
   setSelectedMode("online");
   clearReport();
+  setButtonLoading(queryRateEl, "查询中...");
   setBusy(true);
   setStatus("正在查询汇率...");
 
   if (fromCurrencyEl.value === toCurrencyEl.value) {
+    clearButtonLoading(queryRateEl);
     setBusy(false);
     setStatus("基准货币和目标货币不能相同。", true);
     return;
@@ -266,16 +284,20 @@ async function queryExchangeRate() {
   } catch (error) {
     setStatus("服务连接失败，请刷新页面或稍后重试。", true);
   } finally {
+    clearButtonLoading(queryRateEl);
     setBusy(false);
   }
 }
 
+// 报表生成接口：根据当前格式生成 Excel 或 Word，并返回下载链接。
 async function generateExchangeReport() {
   setSelectedMode("report");
+  setButtonLoading(generateExchangeReportEl, "生成中...");
   setBusy(true);
   setStatus("正在生成报表...");
 
   if (fromCurrencyEl.value === toCurrencyEl.value) {
+    clearButtonLoading(generateExchangeReportEl);
     setBusy(false);
     setStatus("基准货币和目标货币不能相同。", true);
     return;
@@ -301,29 +323,12 @@ async function generateExchangeReport() {
   } catch (error) {
     setStatus("服务连接失败，请刷新页面或稍后重试。", true);
   } finally {
+    clearButtonLoading(generateExchangeReportEl);
     setBusy(false);
   }
 }
 
-async function generateLegacyReport(reportType) {
-  setBusy(true);
-  setStatus("正在生成报表...");
-
-  try {
-    const response = await fetch(`/api/generate/${reportType}`, { method: "POST" });
-    const payload = await response.json();
-    if (!response.ok || !payload.ok) {
-      throw new Error(payload.error || "生成失败");
-    }
-    renderFile(payload.file);
-    setStatus("报表已生成，点击下载报表。");
-  } catch (error) {
-    setStatus("服务连接失败，请刷新页面或稍后重试。", true);
-  } finally {
-    setBusy(false);
-  }
-}
-
+// 使用临时 a 标签触发浏览器下载，兼容桌面和手机浏览器。
 function downloadCurrentFile() {
   if (!currentFile || downloadEl.disabled) {
     setStatus("文件已过期，请重新生成。", true);
@@ -375,8 +380,4 @@ copyDownloadUrlEl.addEventListener("click", copyDownloadUrl);
 
 document.querySelectorAll("input[name='query-mode']").forEach((option) => {
   option.addEventListener("change", syncModeUI);
-});
-
-legacyReportButtons.forEach((button) => {
-  button.addEventListener("click", () => generateLegacyReport(button.dataset.report));
 });
