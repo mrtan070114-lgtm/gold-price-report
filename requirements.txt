@@ -3,3 +3,4 @@ requests
 openpyxl
 Flask
 gunicorn
+psycopg2-binary

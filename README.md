@@ -7,6 +7,7 @@
 - 显示当前汇率、起始汇率、涨跌金额、涨跌百分比
 - 可选择生成 Excel 或 Word 汇率报表
 - 支持手机端下载提示和微信内置浏览器提示
+- 支持把目标日期、备注、恋爱开始日期保存到后台数据库
 - 支持部署到 Render
 
 ## 目录结构
@@ -14,6 +15,7 @@
 ```text
 gold-price-report/
 ├── app.py
+├── settings_store.py
 ├── 生成汇率报表.command
 ├── scripts/
 │   └── exchange_report.py
@@ -33,6 +35,7 @@ gold-price-report/
 说明：
 
 - `app.py` 是 Flask Web 服务入口。
+- `settings_store.py` 负责后台配置的 PostgreSQL / SQLite 存储。
 - `scripts/exchange_report.py` 负责汇率查询、Excel 报表、Word 报表生成。
 - `templates/index.html` 是网页界面。
 - `static/` 存放前端脚本和样式。
@@ -65,6 +68,35 @@ http://127.0.0.1:5000
 ```
 
 不要直接打开 `templates/index.html`。这个文件只是 Flask 模板，直接打开时无法连接后端接口。
+
+## 数据库配置
+
+目标日期、备注、恋爱开始日期会保存到数据库表 `app_settings` 中：
+
+```text
+key = countdown_config
+value = {
+  "target_date": "2026-07-30",
+  "note": "2",
+  "love_start_date": "2024-09-22"
+}
+```
+
+线上部署优先使用 PostgreSQL，并通过环境变量读取连接：
+
+```text
+DATABASE_URL=postgresql://...
+```
+
+本地开发如果没有配置 `DATABASE_URL`，程序会自动使用 SQLite 兜底，数据库文件位于：
+
+```text
+data/app_settings.sqlite3
+```
+
+Render 线上建议使用 Supabase、Neon 或 Render PostgreSQL，然后把它们提供的连接字符串配置到 `DATABASE_URL`。
+
+不要把数据库密码、连接字符串或任何密钥写死在代码里，也不要提交到 Git。需要本地配置时可以放在未提交的 `.env` 或 shell 环境变量中。
 
 ## 页面功能
 
@@ -136,6 +168,14 @@ gold-price-report
 ```
 
 项目中也提供了 `render.yaml`，可作为 Render Blueprint 使用。
+
+如果使用数据库保存倒计时配置，请在 Render 的 Environment Variables 中添加：
+
+```text
+DATABASE_URL
+```
+
+并确保依赖安装包含 `psycopg2-binary`。
 
 ## 安全规则
 

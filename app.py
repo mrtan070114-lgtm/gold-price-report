@@ -23,6 +23,7 @@ from scripts.exchange_report import (
     build_pair_word_report,
     collect_exchange_rate_pair,
 )
+from settings_store import ConfigValidationError, SettingsStore
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -40,6 +41,7 @@ MIME_TYPES = {
 
 app = Flask(__name__)
 registry_lock = threading.Lock()
+settings_store = SettingsStore()
 
 
 def utc_now() -> datetime:
@@ -224,6 +226,75 @@ def currencies():
             ],
         }
     )
+
+
+@app.get("/api/countdown-config")
+def get_countdown_config():
+    try:
+        config = settings_store.get_countdown_config()
+        return jsonify({"success": True, **config})
+    except Exception as exc:
+        return jsonify({"success": False, "error": f"读取配置失败：{exc}"}), 500
+
+
+@app.post("/api/countdown-config")
+def update_countdown_config():
+    try:
+        payload = request.get_json(silent=True) or {}
+        config = settings_store.save_countdown_config(payload)
+        return jsonify({"success": True, **config})
+    except ConfigValidationError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"success": False, "error": f"保存配置失败：{exc}"}), 500
+
+
+@app.get("/api/countdown-settings")
+def get_countdown_settings():
+    try:
+        config = settings_store.get_countdown_config()
+        return jsonify(
+            {
+                "success": True,
+                "settings": {
+                    "targetDate": config["target_date"],
+                    "note": config["note"],
+                    "loveStartDate": config["love_start_date"],
+                    "updated_at": config["updated_at"],
+                },
+            }
+        )
+    except Exception as exc:
+        return jsonify({"success": False, "error": f"读取配置失败：{exc}"}), 500
+
+
+@app.post("/api/countdown-settings")
+def update_countdown_settings():
+    try:
+        payload = request.get_json(silent=True) or {}
+        current = settings_store.get_countdown_config()
+        config = settings_store.save_countdown_config(
+            {
+                "target_date": payload.get("target_date") or payload.get("targetDate") or current["target_date"],
+                "note": payload.get("note", ""),
+                "love_start_date": payload.get("love_start_date") or payload.get("loveStartDate") or current["love_start_date"],
+            }
+        )
+        return jsonify(
+            {
+                "success": True,
+                "settings": {
+                    "targetDate": config["target_date"],
+                    "note": config["note"],
+                    "loveStartDate": config["love_start_date"],
+                    "updated_at": config["updated_at"],
+                },
+            }
+        )
+    except ConfigValidationError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"success": False, "error": f"保存配置失败：{exc}"}), 500
 
 
 @app.post("/api/exchange-rate")

@@ -3,6 +3,26 @@ const toCurrencyEl = document.getElementById("to-currency");
 const periodEl = document.getElementById("period");
 const reportFormatFieldEl = document.getElementById("report-format-field");
 const reportFormatEl = document.getElementById("report-format");
+const countdownLabelEl = document.getElementById("countdown-target-label");
+const countdownDaysEl = document.getElementById("countdown-days");
+const countdownNoteDisplayEl = document.getElementById("countdown-note-display");
+const countdownNoteEl = document.getElementById("countdown-note");
+const countdownTargetDateEl = document.getElementById("countdown-target-date");
+const loveStartDateEl = document.getElementById("love-start-date");
+const countdownEditEl = document.getElementById("countdown-edit");
+const countdownModalEl = document.getElementById("countdown-editor-modal");
+const countdownSaveEl = document.getElementById("countdown-save");
+const countdownCancelEl = document.getElementById("countdown-cancel");
+const countdownCloseEl = document.getElementById("countdown-editor-close");
+const countdownConfirmModalEl = document.getElementById("countdown-confirm-modal");
+const countdownConfirmSaveEl = document.getElementById("countdown-confirm-save");
+const countdownConfirmCancelEl = document.getElementById("countdown-confirm-cancel");
+const countdownConfirmCloseEl = document.getElementById("countdown-confirm-close");
+const confirmTargetDateEl = document.getElementById("confirm-target-date");
+const confirmLoveStartDateEl = document.getElementById("confirm-love-start-date");
+const confirmNoteEl = document.getElementById("confirm-note");
+const saveToastEl = document.getElementById("save-toast");
+const loveDaysEl = document.getElementById("love-days");
 const queryRateEl = document.getElementById("query-rate");
 const generateExchangeReportEl = document.getElementById("generate-exchange-report");
 const statusBox = document.getElementById("status");
@@ -34,6 +54,17 @@ const copyDownloadUrlEl = document.getElementById("copy-download-url");
 
 let currentFile = null;
 let countdownTimer = null;
+let countdownConfig = {
+  target_date: "2026-07-30",
+  note: "",
+  love_start_date: "2024-09-22",
+};
+let pendingCountdownConfig = null;
+let toastTimer = null;
+const countdownConfigStorageKey = "heartBabyCountdownConfig";
+const countdownSettingsStorageKey = "heartBabyCountdownSettings";
+const countdownStorageKey = "heartBabyCountdownTargetDate";
+const countdownNoteStorageKey = "heartBabyCountdownNote";
 const successStatusPattern = /完成|已生成|下载已开始|已复制/;
 const userAgent = navigator.userAgent || "";
 const isWeChatBrowser = /MicroMessenger/i.test(userAgent);
@@ -45,7 +76,352 @@ if (window.location.protocol === "file:") {
 }
 
 renderClientHint();
+loadLocalCountdownConfig();
+applyCountdownConfig(countdownConfig, false);
+hydrateCountdownConfig();
 syncModeUI();
+
+function formatDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateInputValue(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || "");
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    return null;
+  }
+  return date;
+}
+
+function getTodayDate() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function normalizeCountdownNote(value) {
+  return (value || "").trim();
+}
+
+function normalizeCountdownConfig(raw) {
+  const source = raw || {};
+  const targetDate = source.target_date || source.targetDate || countdownConfig.target_date;
+  const loveStartDate = source.love_start_date || source.loveStartDate || countdownConfig.love_start_date;
+  const target = parseDateInputValue(targetDate) ? targetDate : countdownConfig.target_date;
+  const loveStart = parseDateInputValue(loveStartDate) ? loveStartDate : countdownConfig.love_start_date;
+  const note = normalizeCountdownNote(source.note).slice(0, 100);
+
+  return {
+    target_date: target,
+    note,
+    love_start_date: loveStart,
+  };
+}
+
+function loadLocalCountdownConfig() {
+  try {
+    const rawConfig = localStorage.getItem(countdownConfigStorageKey);
+    const stored = rawConfig ? JSON.parse(rawConfig) : null;
+    if (stored && typeof stored === "object") {
+      countdownConfig = normalizeCountdownConfig(stored);
+      return;
+    }
+  } catch (error) {
+    // Ignore invalid local data and fall back to defaults.
+  }
+
+  try {
+    const legacy = JSON.parse(localStorage.getItem(countdownSettingsStorageKey) || "{}");
+    countdownConfig = normalizeCountdownConfig({
+      target_date: legacy.targetDate,
+      note: legacy.note,
+      love_start_date: legacy.loveStartDate,
+    });
+  } catch (error) {
+    const legacyTarget = localStorage.getItem(countdownStorageKey);
+    const legacyNote = localStorage.getItem(countdownNoteStorageKey);
+    countdownConfig = normalizeCountdownConfig({
+      target_date: legacyTarget,
+      note: legacyNote,
+    });
+  }
+}
+
+function persistCountdownConfigLocal(config) {
+  try {
+    localStorage.setItem(countdownConfigStorageKey, JSON.stringify(config));
+    localStorage.setItem(countdownSettingsStorageKey, JSON.stringify({
+      targetDate: config.target_date,
+      note: config.note,
+      loveStartDate: config.love_start_date,
+    }));
+    localStorage.setItem(countdownStorageKey, config.target_date);
+    if (config.note) {
+      localStorage.setItem(countdownNoteStorageKey, config.note);
+    } else {
+      localStorage.removeItem(countdownNoteStorageKey);
+    }
+  } catch (error) {
+    // Storage can be unavailable in some privacy modes; the backend remains the source of truth.
+  }
+}
+
+function renderLoveDay(startDate) {
+  if (!loveDaysEl || !startDate) {
+    return;
+  }
+
+  const today = getTodayDate();
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const days = Math.floor((today.getTime() - startDate.getTime()) / msPerDay) + 1;
+  loveDaysEl.textContent = String(Math.max(days, 1));
+}
+
+function formatCountdownLabel(date) {
+  const today = getTodayDate();
+  const monthDay = `${date.getMonth() + 1}月${date.getDate()}日`;
+  return date.getFullYear() === today.getFullYear() ? monthDay : `${date.getFullYear()}年${monthDay}`;
+}
+
+function renderDateCountdown(target) {
+  if (!countdownDaysEl || !target) {
+    return;
+  }
+
+  const today = getTodayDate();
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const days = Math.round((target.getTime() - today.getTime()) / msPerDay);
+  countdownDaysEl.textContent = String(Math.max(days, 0));
+  if (countdownLabelEl) {
+    countdownLabelEl.textContent = formatCountdownLabel(target);
+  }
+}
+
+function renderCountdownNote(value) {
+  if (!countdownNoteDisplayEl) {
+    return;
+  }
+
+  const note = normalizeCountdownNote(value);
+  if (note) {
+    countdownNoteDisplayEl.textContent = `♡ ${note}`;
+    countdownNoteDisplayEl.title = note;
+    countdownNoteDisplayEl.hidden = false;
+  } else {
+    countdownNoteDisplayEl.textContent = "";
+    countdownNoteDisplayEl.removeAttribute("title");
+    countdownNoteDisplayEl.hidden = true;
+  }
+}
+
+function applyCountdownConfig(rawConfig, shouldPersistLocal = true) {
+  countdownConfig = normalizeCountdownConfig(rawConfig);
+  const target = parseDateInputValue(countdownConfig.target_date);
+  const loveStart = parseDateInputValue(countdownConfig.love_start_date);
+
+  if (countdownTargetDateEl) {
+    countdownTargetDateEl.value = countdownConfig.target_date;
+  }
+  if (loveStartDateEl) {
+    loveStartDateEl.value = countdownConfig.love_start_date;
+  }
+  if (countdownNoteEl) {
+    countdownNoteEl.value = countdownConfig.note;
+  }
+
+  renderDateCountdown(target);
+  renderLoveDay(loveStart);
+  renderCountdownNote(countdownConfig.note);
+
+  if (shouldPersistLocal) {
+    persistCountdownConfigLocal(countdownConfig);
+  }
+  return true;
+}
+
+async function hydrateCountdownConfig() {
+  if (window.location.protocol === "file:") {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/countdown-config", { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok || !payload.success) {
+      throw new Error(payload.error || "读取配置失败");
+    }
+    applyCountdownConfig(payload);
+  } catch (error) {
+    setStatus("倒计时配置读取失败，已使用本地显示。", true);
+  }
+}
+
+function syncCountdownEditorFields() {
+  if (countdownTargetDateEl) {
+    countdownTargetDateEl.value = countdownConfig.target_date;
+  }
+  if (loveStartDateEl) {
+    loveStartDateEl.value = countdownConfig.love_start_date;
+  }
+  if (countdownNoteEl) {
+    countdownNoteEl.value = countdownConfig.note;
+  }
+}
+
+function setModalOpenState() {
+  const editorOpen = countdownModalEl && !countdownModalEl.hidden;
+  const confirmOpen = countdownConfirmModalEl && !countdownConfirmModalEl.hidden;
+  document.body.classList.toggle("modal-open", Boolean(editorOpen || confirmOpen));
+}
+
+function openCountdownEditor() {
+  if (!countdownModalEl) {
+    return;
+  }
+
+  syncCountdownEditorFields();
+  countdownModalEl.hidden = false;
+  setModalOpenState();
+  if (countdownTargetDateEl) {
+    countdownTargetDateEl.focus();
+  }
+}
+
+function closeCountdownEditor() {
+  if (!countdownModalEl) {
+    return;
+  }
+
+  countdownModalEl.hidden = true;
+  pendingCountdownConfig = null;
+  closeCountdownConfirm(false);
+  syncCountdownEditorFields();
+  setModalOpenState();
+}
+
+function collectEditorConfig() {
+  const targetDate = countdownTargetDateEl ? countdownTargetDateEl.value : "";
+  const loveStartDate = loveStartDateEl ? loveStartDateEl.value : "";
+  const note = countdownNoteEl ? normalizeCountdownNote(countdownNoteEl.value) : "";
+
+  if (!parseDateInputValue(targetDate)) {
+    throw new Error("目标日期格式必须是 YYYY-MM-DD");
+  }
+  if (!parseDateInputValue(loveStartDate)) {
+    throw new Error("恋爱开始日期格式必须是 YYYY-MM-DD");
+  }
+  if (note.length > 100) {
+    throw new Error("备注最多 100 个字符");
+  }
+
+  return {
+    target_date: targetDate,
+    note,
+    love_start_date: loveStartDate,
+  };
+}
+
+function openCountdownConfirm() {
+  if (!countdownConfirmModalEl) {
+    return;
+  }
+
+  try {
+    pendingCountdownConfig = collectEditorConfig();
+  } catch (error) {
+    setStatus(error.message, true);
+    return;
+  }
+
+  if (confirmTargetDateEl) {
+    confirmTargetDateEl.textContent = pendingCountdownConfig.target_date;
+  }
+  if (confirmLoveStartDateEl) {
+    confirmLoveStartDateEl.textContent = pendingCountdownConfig.love_start_date;
+  }
+  if (confirmNoteEl) {
+    confirmNoteEl.textContent = pendingCountdownConfig.note || "无";
+  }
+
+  countdownConfirmModalEl.hidden = false;
+  setModalOpenState();
+}
+
+function closeCountdownConfirm(clearPending = true) {
+  if (!countdownConfirmModalEl) {
+    return;
+  }
+
+  countdownConfirmModalEl.hidden = true;
+  if (clearPending) {
+    pendingCountdownConfig = null;
+  }
+  setModalOpenState();
+}
+
+function showSaveToast(message) {
+  if (!saveToastEl) {
+    return;
+  }
+
+  saveToastEl.textContent = message;
+  saveToastEl.hidden = false;
+  if (toastTimer) {
+    clearTimeout(toastTimer);
+  }
+  toastTimer = setTimeout(() => {
+    saveToastEl.hidden = true;
+  }, 2200);
+}
+
+async function confirmSaveCountdownConfig() {
+  if (!pendingCountdownConfig || !countdownConfirmSaveEl) {
+    return;
+  }
+
+  countdownConfirmSaveEl.disabled = true;
+  setButtonLoading(countdownConfirmSaveEl, "保存中...");
+
+  try {
+    const response = await fetch("/api/countdown-config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(pendingCountdownConfig),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.success) {
+      throw new Error(payload.error || "保存失败");
+    }
+
+    applyCountdownConfig(payload);
+    closeCountdownConfirm();
+    if (countdownModalEl) {
+      countdownModalEl.hidden = true;
+    }
+    setModalOpenState();
+    setStatus("倒计时配置已保存。");
+    showSaveToast("保存成功");
+  } catch (error) {
+    setStatus(error.message || "保存失败，请稍后重试。", true);
+  } finally {
+    clearButtonLoading(countdownConfirmSaveEl);
+    countdownConfirmSaveEl.disabled = false;
+  }
+}
+
+function saveCountdownSettings() {
+  openCountdownConfirm();
+}
 
 function setBusy(isBusy) {
   queryRateEl.disabled = isBusy;
@@ -87,7 +463,8 @@ function clearButtonLoading(button) {
 }
 
 function getSelectedMode() {
-  return document.querySelector("input[name='query-mode']:checked")?.value || "online";
+  const selected = document.querySelector("input[name='query-mode']:checked");
+  return selected ? selected.value : "online";
 }
 
 function setSelectedMode(mode) {
@@ -377,6 +754,45 @@ queryRateEl.addEventListener("click", queryExchangeRate);
 generateExchangeReportEl.addEventListener("click", generateExchangeReport);
 downloadEl.addEventListener("click", downloadCurrentFile);
 copyDownloadUrlEl.addEventListener("click", copyDownloadUrl);
+if (countdownEditEl) {
+  countdownEditEl.addEventListener("click", openCountdownEditor);
+}
+if (countdownSaveEl) {
+  countdownSaveEl.addEventListener("click", saveCountdownSettings);
+}
+if (countdownCancelEl) {
+  countdownCancelEl.addEventListener("click", closeCountdownEditor);
+}
+if (countdownCloseEl) {
+  countdownCloseEl.addEventListener("click", closeCountdownEditor);
+}
+if (countdownConfirmSaveEl) {
+  countdownConfirmSaveEl.addEventListener("click", confirmSaveCountdownConfig);
+}
+if (countdownConfirmCancelEl) {
+  countdownConfirmCancelEl.addEventListener("click", closeCountdownConfirm);
+}
+if (countdownConfirmCloseEl) {
+  countdownConfirmCloseEl.addEventListener("click", closeCountdownConfirm);
+}
+document.querySelectorAll("[data-countdown-close]").forEach((el) => {
+  el.addEventListener("click", closeCountdownEditor);
+});
+document.querySelectorAll("[data-countdown-confirm-close]").forEach((el) => {
+  el.addEventListener("click", closeCountdownConfirm);
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") {
+    return;
+  }
+  if (countdownConfirmModalEl && !countdownConfirmModalEl.hidden) {
+    closeCountdownConfirm();
+    return;
+  }
+  if (countdownModalEl && !countdownModalEl.hidden) {
+    closeCountdownEditor();
+  }
+});
 
 document.querySelectorAll("input[name='query-mode']").forEach((option) => {
   option.addEventListener("change", syncModeUI);

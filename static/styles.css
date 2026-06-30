@@ -45,7 +45,12 @@ body {
 }
 
 html {
-  background: #f2f5fa;
+  background:
+    radial-gradient(circle at 15% 18%, rgba(128, 158, 255, 0.42), transparent 32%),
+    radial-gradient(circle at 85% 12%, rgba(255, 147, 170, 0.58), transparent 30%),
+    radial-gradient(circle at 52% 84%, rgba(128, 176, 255, 0.28), transparent 32%),
+    radial-gradient(circle at 10% 90%, rgba(255, 190, 208, 0.44), transparent 26%),
+    linear-gradient(135deg, #ecf3ff 0%, #f9dfe8 52%, #f4e3eb 100%);
 }
 
 body {
@@ -84,7 +89,8 @@ body::after {
 
 button,
 select,
-input {
+input,
+textarea {
   font: inherit;
 }
 
@@ -105,25 +111,42 @@ input {
 }
 
 .app-shell {
+  position: relative;
   width: min(760px, 100%);
   max-width: 100%;
   min-width: 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.app-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  box-shadow: 0 20px 54px rgba(255, 158, 200, 0.30);
+  pointer-events: none;
 }
 
 .tool-card,
 .rate-result,
 .result {
   background: rgba(255, 255, 255, 0.38);
+  background-clip: padding-box;
   border: 1px solid rgba(255, 255, 255, 0.65);
   border-radius: var(--radius-lg);
-  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.14), var(--panel-inset);
+  box-shadow: var(--panel-inset);
   backdrop-filter: blur(36px) saturate(190%);
   -webkit-backdrop-filter: blur(36px) saturate(190%);
 }
 
 .tool-card {
   position: relative;
+  z-index: 1;
   overflow: hidden;
+  isolation: isolate;
+  clip-path: inset(0 round var(--radius-lg));
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -252,13 +275,348 @@ h3 {
 }
 
 .app-header {
-  margin-bottom: 24px;
-  padding-bottom: 22px;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
 
+.brand-copy {
+  min-width: 0;
+  max-width: 560px;
+}
+
+.header-side {
+  width: 100%;
+  justify-self: stretch;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.date-countdown,
+.love-day {
+  width: 100%;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 8px;
+  min-height: 156px;
+  padding: 20px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    inset 0 -14px 26px rgba(255, 158, 200, 0.12);
+  backdrop-filter: blur(22px) saturate(165%);
+  -webkit-backdrop-filter: blur(22px) saturate(165%);
+}
+
+.date-countdown {
+  min-width: 0;
+}
+
+.countdown-label,
+.countdown-caption {
+  color: #ff9ec8;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 850;
+}
+
+.countdown-label {
+  letter-spacing: 0.09em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.countdown-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.date-countdown .countdown-caption {
+  max-width: 100%;
+  color: #ff8fc3;
+  font-size: 15px;
+  font-weight: 850;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.countdown-edit {
+  width: auto;
+  min-width: 0;
+  min-height: 28px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 158, 200, 0.42);
+  border-radius: 999px;
+  padding: 0 10px;
+  color: #ff5bb7;
+  background: rgba(255, 255, 255, 0.20);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.date-countdown strong,
+.love-day strong {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  color: #ff5bb7;
+  font-size: clamp(34px, 5vw, 52px);
+  line-height: 1;
+  font-weight: 900;
+  min-width: 0;
+}
+
+.date-countdown strong span:last-child,
+.love-day strong span:first-child,
+.love-day strong span:last-child {
+  font-size: 18px;
+  font-weight: 850;
+}
+
+.love-day {
+  gap: 8px;
+  justify-items: center;
+  min-height: 158px;
+  padding: 22px 24px;
+  text-align: center;
+}
+
+.love-day .countdown-label {
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+.love-day .love-start,
+.love-day .countdown-caption {
+  display: none;
+}
+
+.love-day strong {
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  font-size: clamp(42px, 6.5vw, 60px);
+}
+
+.love-day strong span:first-child,
+.love-day strong span:last-child {
+  font-size: 22px;
+}
+
+.note-pill {
+  display: inline-flex;
+  align-items: center;
+  align-self: start;
+  max-width: 100%;
+  min-width: 0;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.38);
+  color: #ff5fb0;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.countdown-picker {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.countdown-picker span {
+  color: #ff9ec8;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.countdown-picker input,
+.countdown-picker textarea {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid rgba(255, 158, 200, 0.42);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #ff5bb7;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 850;
+  outline: none;
+}
+
+.countdown-picker textarea {
+  min-height: 86px;
+  padding: 12px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.countdown-picker input:focus,
+.countdown-picker textarea:focus {
+  border-color: rgba(255, 91, 183, 0.66);
+  box-shadow: 0 0 0 3px rgba(255, 91, 183, 0.14);
+}
+
+.countdown-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.countdown-modal[hidden] {
+  display: none !important;
+}
+
+.confirm-modal {
+  z-index: 30;
+}
+
+.countdown-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 216, 232, 0.42);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+}
+
+.countdown-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(360px, 100%);
+  max-width: 100%;
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 26px;
+  background: rgba(255, 245, 251, 0.72);
+  box-shadow:
+    0 18px 60px rgba(255, 91, 183, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -18px 30px rgba(255, 158, 200, 0.13);
+  backdrop-filter: blur(28px) saturate(170%);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+}
+
+.confirm-dialog {
+  width: min(390px, 100%);
+}
+
+.countdown-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.countdown-dialog h3 {
+  color: #ff5bb7;
+  font-size: 20px;
+}
+
+.confirm-summary {
+  display: grid;
+  gap: 10px;
+}
+
+.confirm-summary div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.20);
+}
+
+.confirm-summary span {
+  color: #ff9ec8;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.confirm-summary strong {
+  min-width: 0;
+  color: #ff5bb7;
+  font-size: 15px;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.countdown-close {
+  width: 32px;
+  min-height: 32px;
+  flex: 0 0 32px;
+  border: 1px solid rgba(255, 158, 200, 0.38);
+  border-radius: 999px;
+  padding: 0;
+  color: #ff5bb7;
+  background: rgba(255, 255, 255, 0.28);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.countdown-dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.countdown-dialog-actions button {
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+.save-toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(22px, env(safe-area-inset-bottom));
+  z-index: 40;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 999px;
+  background: rgba(255, 245, 251, 0.78);
+  color: #ff5bb7;
+  font-size: 14px;
+  font-weight: 850;
+  box-shadow: 0 16px 42px rgba(255, 91, 183, 0.20);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+}
+
 .section-heading {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .form-grid {
@@ -279,7 +637,7 @@ h3 {
 .form-grid label span,
 .section-label,
 .label {
-  color: #f25599;
+  color: #ff9ec8;
   font-size: 14px;
   font-weight: 750;
 }
@@ -603,7 +961,7 @@ button.is-loading {
   border: 1px solid rgba(255, 255, 255, 0.20);
   border-radius: 999px;
   padding: 0 12px;
-  color: rgba(255, 255, 255, 0.86);
+  color: #ff9ec8;
   font-size: 13px;
   font-weight: 850;
   white-space: nowrap;
@@ -612,17 +970,18 @@ button.is-loading {
 }
 
 .trend-badge.up {
-  color: #bbf7d0;
+  color: #ff9ec8;
   background: rgba(34, 197, 94, 0.18);
 }
 
 .trend-badge.down {
-  color: #fecaca;
-  background: rgba(239, 68, 68, 0.18);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.40);
+  background: rgba(239, 68, 68, 0.16);
 }
 
 .trend-badge.neutral {
-  color: rgba(226, 232, 240, 0.78);
+  color: #ff9ec8;
   background: rgba(148, 163, 184, 0.16);
 }
 
@@ -641,7 +1000,7 @@ button.is-loading {
 }
 
 .rate-highlight strong {
-  color: #ffffff;
+  color: #ff5bb7;
   font-size: clamp(34px, 6vw, 50px);
   line-height: 1;
   font-weight: 900;
@@ -673,7 +1032,7 @@ button.is-loading {
 }
 
 .result-list dt {
-  color: rgba(226, 232, 240, 0.64);
+  color: #ff9ec8;
   font-size: 12px;
   font-weight: 750;
 }
@@ -682,7 +1041,7 @@ button.is-loading {
 .meta-grid span,
 .result-main strong {
   margin: 0;
-  color: #ffffff;
+  color: #ff5bb7;
   font-size: 14px;
   font-weight: 850;
   overflow-wrap: anywhere;
@@ -695,7 +1054,7 @@ button.is-loading {
 .fallback-download {
   display: inline-flex;
   margin-top: 14px;
-  color: #93c5fd;
+  color: #ff9ec8;
   font-size: 14px;
   font-weight: 850;
   text-decoration: underline;
@@ -738,7 +1097,7 @@ button.is-loading {
 
 @media (max-width: 768px) {
   body {
-    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
     overflow-x: hidden;
   }
 
@@ -746,13 +1105,14 @@ button.is-loading {
     align-items: start;
     width: 100%;
     max-width: 100%;
-    padding: 0 0 16px;
+    padding: 0;
   }
 
   .app-shell {
     width: 100%;
     max-width: 100%;
     min-width: 0;
+    border-radius: 26px;
     margin-left: auto;
     margin-right: auto;
   }
@@ -772,8 +1132,9 @@ button.is-loading {
   }
 
   .tool-card {
-    padding: 20px;
+    padding: 18px 16px;
     border-radius: 26px;
+    clip-path: inset(0 round 26px);
   }
 
   .rate-result,
@@ -783,25 +1144,36 @@ button.is-loading {
   }
 
   h1 {
-    font-size: 32px;
+    margin-top: 5px;
+    font-size: 30px;
+    line-height: 1;
   }
 
   .brand-title {
-    gap: 10px;
+    gap: 8px;
   }
 
   .site-logo {
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
     border-radius: 0;
   }
 
   h2 {
-    font-size: 22px;
+    margin-top: 4px;
+    font-size: 21px;
   }
 
   .summary {
-    font-size: 14px;
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .eyebrow,
+  .section-kicker {
+    font-size: 11px;
+    line-height: 1.2;
   }
 
   .form-grid,
@@ -827,6 +1199,7 @@ button.is-loading {
   .actions .download,
   select,
   input,
+  textarea,
   .copy-row input {
     width: 100%;
     max-width: 100%;
@@ -834,13 +1207,83 @@ button.is-loading {
   }
 
   .app-header {
-    margin-bottom: 18px;
-    padding-bottom: 18px;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+  }
+
+  .header-side {
+    width: 100%;
+    justify-self: stretch;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .date-countdown,
+  .love-day {
+    width: 100%;
+    align-content: center;
+    justify-items: start;
+    gap: 5px;
+    min-height: 124px;
+    padding: 14px;
+    border-radius: 22px;
+  }
+
+  .date-countdown strong,
+  .love-day strong {
+    font-size: clamp(24px, 7vw, 34px);
+  }
+
+  .love-day {
+    gap: 5px;
+    min-height: 128px;
+    padding: 15px;
+  }
+
+  .love-day .countdown-label {
+    font-size: 13px;
+  }
+
+  .love-day strong {
+    gap: 5px;
+    font-size: clamp(32px, 9vw, 42px);
+  }
+
+  .love-day strong span:first-child,
+  .love-day strong span:last-child {
+    font-size: 17px;
+  }
+
+  .countdown-label,
+  .countdown-caption,
+  .note-pill {
+    font-size: 11px;
+  }
+
+  .date-countdown .countdown-caption {
+    font-size: 12px;
+  }
+
+  .note-pill {
+    max-width: 100%;
+    padding: 5px 9px;
+  }
+
+  .countdown-edit {
+    min-height: 26px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  .section-heading {
+    margin-bottom: 14px;
   }
 
   .query-mode-card {
-    margin-top: 20px;
-    padding: 22px 16px 16px;
+    margin-top: 16px;
+    padding: 18px 14px 14px;
     border-radius: 24px;
   }
 
@@ -864,12 +1307,35 @@ button.is-loading {
 
   button,
   .download,
-  select {
+  select,
+  .countdown-picker input,
+  .countdown-picker textarea {
     min-height: 52px;
+  }
+
+  .countdown-modal {
+    padding: 12px;
+  }
+
+  .countdown-dialog {
+    width: min(100%, 390px);
+    padding: 18px;
   }
 
   .result-card-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+@media (max-width: 390px) {
+  .header-side {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 340px) {
+  .countdown-dialog-actions {
+    grid-template-columns: 1fr;
   }
 }

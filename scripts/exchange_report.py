@@ -42,6 +42,7 @@ CURRENCY_NAMES = {
 PERIOD_DAYS = {
     "realtime": 0,
     "1D": 1,
+    "3D": 3,
     "1W": 7,
     "1M": 30,
     "3M": 90,
@@ -53,6 +54,7 @@ PERIOD_DAYS = {
 PERIOD_LABELS = {
     "realtime": "实时",
     "1D": "1日",
+    "3D": "3日",
     "1W": "1周",
     "1M": "1个月",
     "3M": "3个月",

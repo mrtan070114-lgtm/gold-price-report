@@ -12,6 +12,9 @@ reports/**/*.xlsx
 reports/**/*.pdf
 reports/**/*.json
 
+# 本地数据库和运行时配置
+data/
+
 # 允许保留空文件夹标记
 !reports/**/.gitkeep
 
