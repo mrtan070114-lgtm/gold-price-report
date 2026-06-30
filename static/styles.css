@@ -30,12 +30,17 @@
 }
 
 html {
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  overflow-x: hidden;
   background: #e0f2fe;
 }
 
 body {
   margin: 0;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
   min-height: 100vh;
   overflow-x: hidden;
@@ -84,10 +89,13 @@ input {
 .page {
   position: relative;
   z-index: 1;
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: 34px 20px;
+  overflow-x: hidden;
 }
 
 .page::before {
@@ -106,6 +114,8 @@ input {
 
 .app-shell {
   width: min(760px, 100%);
+  max-width: 100%;
+  min-width: 0;
 }
 
 .tool-card,
@@ -123,6 +133,9 @@ input {
 .tool-card {
   position: relative;
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 30px;
   animation: glassIn 520ms ease both;
 }
@@ -217,11 +230,15 @@ h3 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .form-grid label {
   display: grid;
   gap: 8px;
+  min-width: 0;
 }
 
 .form-grid label span,
@@ -235,6 +252,8 @@ h3 {
 select,
 .copy-row input {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: var(--control-height);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
@@ -286,6 +305,9 @@ select:focus,
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin: 22px 0 0;
   padding: 16px;
   border: 1px solid var(--line);
@@ -308,6 +330,7 @@ select:focus,
   display: flex;
   align-items: center;
   gap: 11px;
+  min-width: 0;
   min-height: 48px;
   padding: 11px 13px;
   border: 1px solid rgba(255, 255, 255, 0.36);
@@ -321,6 +344,11 @@ select:focus,
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.choice-group label span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .choice-group label:hover {
@@ -345,6 +373,9 @@ select:focus,
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin-top: 22px;
 }
 
@@ -352,6 +383,8 @@ button,
 .download {
   min-height: 54px;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   border-radius: var(--radius-sm);
   padding: 0 18px;
   font-size: 16px;
@@ -465,6 +498,9 @@ button.is-loading {
 .rate-result,
 .result {
   margin-top: 18px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 22px;
   border-radius: 24px;
   box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12), var(--inner-highlight);
@@ -535,6 +571,9 @@ button.is-loading {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin: 0;
 }
 
@@ -591,6 +630,9 @@ button.is-loading {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 150px;
   gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin-top: 8px;
 }
 
@@ -613,24 +655,39 @@ button.is-loading {
   line-height: 1.5;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
   .page {
     align-items: start;
-    padding: 24px 16px;
+    width: 100%;
+    max-width: 100%;
+    padding: 18px 0 28px;
   }
 
   .app-shell {
-    max-width: 760px;
-  }
-}
-
-@media (max-width: 640px) {
-  .page {
-    padding: 18px 12px 28px;
+    width: min(100%, calc(100% - 24px));
+    max-width: calc(100% - 24px);
+    min-width: 0;
+    margin-left: auto;
+    margin-right: auto;
   }
 
-  .app-shell {
-    width: 94vw;
+  .tool-card,
+  .rate-result,
+  .result {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  body::before,
+  body::after,
+  .page::before {
+    display: none;
   }
 
   .tool-card {
@@ -657,10 +714,29 @@ button.is-loading {
   }
 
   .form-grid,
+  .actions,
+  .choice-group,
   .result-list,
   .meta-grid,
   .copy-row {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     grid-template-columns: 1fr;
+  }
+
+  .actions {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .actions button,
+  .actions .download,
+  select,
+  .copy-row input {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .app-header {
