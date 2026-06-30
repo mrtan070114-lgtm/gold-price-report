@@ -198,12 +198,19 @@ def remove_registry_item(file_id: str) -> None:
 
 @app.before_request
 def cleanup_before_request() -> None:
+    if request.endpoint == "health":
+        return
     cleanup_expired_files()
 
 
 @app.get("/")
 def index():
     return render_template("index.html", ttl_seconds=FILE_TTL_SECONDS)
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
 @app.get("/api/currencies")
