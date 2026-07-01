@@ -59,6 +59,7 @@ html {
 }
 
 body {
+  position: relative;
   min-height: 100vh;
   min-height: 100dvh;
   padding-top: env(safe-area-inset-top);
@@ -70,17 +71,21 @@ body {
   background-attachment: fixed;
 }
 
-body::before,
-body::after {
-  display: none;
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--app-background);
+  pointer-events: none;
 }
 
-body::before {
-  width: 360px;
-  height: 360px;
-  left: -96px;
-  top: 16vh;
-  background: rgba(37, 99, 235, 0.36);
+body::after {
+  display: none;
 }
 
 body::after {
@@ -108,6 +113,7 @@ textarea {
   display: grid;
   place-items: center;
   padding: 34px 20px;
+  background: transparent;
   overflow-x: hidden;
 }
 
@@ -1354,7 +1360,6 @@ button.is-loading {
     min-width: 0;
   }
 
-  body::before,
   body::after,
   .page::before {
     display: none !important;
