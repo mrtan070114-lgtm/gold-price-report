@@ -1,5 +1,11 @@
 :root {
-  color-scheme: dark;
+  color-scheme: light;
+  --app-background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.95), transparent 32%),
+    radial-gradient(circle at 15% 18%, rgba(128, 158, 255, 0.42), transparent 32%),
+    radial-gradient(circle at 85% 12%, rgba(255, 147, 170, 0.58), transparent 30%),
+    radial-gradient(circle at 52% 84%, rgba(128, 176, 255, 0.28), transparent 32%),
+    linear-gradient(135deg, #eef4ff 0%, #ffe4f2 45%, #ffd6ec 100%);
   --text: #f8fafc;
   --muted: rgba(226, 232, 240, 0.72);
   --muted-strong: rgba(255, 255, 255, 0.80);
@@ -40,30 +46,28 @@ html,
 body {
   width: 100%;
   max-width: 100%;
+  min-height: 100%;
   min-width: 0;
+  margin: 0;
+  padding: 0;
+  background: var(--app-background);
   overflow-x: hidden;
 }
 
 html {
-  background:
-    radial-gradient(circle at 15% 18%, rgba(128, 158, 255, 0.42), transparent 32%),
-    radial-gradient(circle at 85% 12%, rgba(255, 147, 170, 0.58), transparent 30%),
-    radial-gradient(circle at 52% 84%, rgba(128, 176, 255, 0.28), transparent 32%),
-    radial-gradient(circle at 10% 90%, rgba(255, 190, 208, 0.44), transparent 26%),
-    linear-gradient(135deg, #ecf3ff 0%, #f9dfe8 52%, #f4e3eb 100%);
+  background-attachment: fixed;
 }
 
 body {
-  margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
   color: var(--text);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "PingFang SC", "Hiragino Sans GB", Arial, sans-serif;
-  background:
-    radial-gradient(circle at 15% 18%, rgba(128, 158, 255, 0.42), transparent 32%),
-    radial-gradient(circle at 85% 12%, rgba(255, 147, 170, 0.58), transparent 30%),
-    radial-gradient(circle at 52% 84%, rgba(128, 176, 255, 0.28), transparent 32%),
-    radial-gradient(circle at 10% 90%, rgba(255, 190, 208, 0.44), transparent 26%),
-    linear-gradient(135deg, #ecf3ff 0%, #f9dfe8 52%, #f4e3eb 100%);
+  background-attachment: fixed;
 }
 
 body::before,
@@ -100,6 +104,7 @@ textarea {
   width: 100%;
   max-width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   padding: 34px 20px;
@@ -595,6 +600,9 @@ h3 {
   min-width: 0;
   min-height: 28px;
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgba(255, 158, 200, 0.42);
   border-radius: 999px;
   padding: 0 10px;
@@ -602,7 +610,8 @@ h3 {
   background: rgba(255, 255, 255, 0.20);
   font-size: 12px;
   font-weight: 850;
-  line-height: 1;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .date-countdown strong,
