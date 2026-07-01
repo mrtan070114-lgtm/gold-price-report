@@ -1,8 +1,44 @@
+const activeTool = document.body.dataset.tool || "home";
+
 const fromCurrencyEl = document.getElementById("from-currency");
 const toCurrencyEl = document.getElementById("to-currency");
 const periodEl = document.getElementById("period");
-const reportFormatFieldEl = document.getElementById("report-format-field");
-const reportFormatEl = document.getElementById("report-format");
+const queryRateEl = document.getElementById("query-rate");
+const exchangeStatusEl = document.getElementById("exchange-status");
+
+const rateResultEl = document.getElementById("rate-result");
+const periodOnlyEls = document.querySelectorAll(".period-only");
+const resultBaseEl = document.getElementById("result-base");
+const resultQuoteEl = document.getElementById("result-quote");
+const resultPeriodEl = document.getElementById("result-period");
+const resultCurrentEl = document.getElementById("result-current");
+const resultCurrentHighlightEl = document.getElementById("result-current-highlight");
+const resultTrendEl = document.getElementById("result-trend");
+const resultStartEl = document.getElementById("result-start");
+const resultChangeEl = document.getElementById("result-change");
+const resultPercentEl = document.getElementById("result-percent");
+const resultSourceEl = document.getElementById("result-source");
+const resultUpdatedEl = document.getElementById("result-updated");
+
+const goldSymbolEl = document.getElementById("gold-symbol");
+const queryGoldEl = document.getElementById("query-gold");
+const goldStatusEl = document.getElementById("gold-status");
+const goldResultEl = document.getElementById("gold-result");
+const goldTrendEl = document.getElementById("gold-trend");
+const goldSymbolResultEl = document.getElementById("gold-symbol-result");
+const goldPriceHighlightEl = document.getElementById("gold-price-highlight");
+const goldPriceEl = document.getElementById("gold-price");
+const goldChangeEl = document.getElementById("gold-change");
+const goldPercentEl = document.getElementById("gold-percent");
+const goldOpenEl = document.getElementById("gold-open");
+const goldHighEl = document.getElementById("gold-high");
+const goldLowEl = document.getElementById("gold-low");
+const goldPreviousCloseEl = document.getElementById("gold-previous-close");
+const goldUsdCnyEl = document.getElementById("gold-usd-cny");
+const goldCnyGramEl = document.getElementById("gold-cny-gram");
+const goldSourceEl = document.getElementById("gold-source");
+const goldUpdatedEl = document.getElementById("gold-updated");
+
 const countdownLabelEl = document.getElementById("countdown-target-label");
 const countdownDaysEl = document.getElementById("countdown-days");
 const countdownNoteDisplayEl = document.getElementById("countdown-note-display");
@@ -23,37 +59,8 @@ const confirmLoveStartDateEl = document.getElementById("confirm-love-start-date"
 const confirmNoteEl = document.getElementById("confirm-note");
 const saveToastEl = document.getElementById("save-toast");
 const loveDaysEl = document.getElementById("love-days");
-const queryRateEl = document.getElementById("query-rate");
-const generateExchangeReportEl = document.getElementById("generate-exchange-report");
-const statusBox = document.getElementById("status");
-const clientHintEl = document.getElementById("client-hint");
+const countdownStatusEl = document.getElementById("countdown-status");
 
-const rateResultEl = document.getElementById("rate-result");
-const periodOnlyEls = document.querySelectorAll(".period-only");
-const resultBaseEl = document.getElementById("result-base");
-const resultQuoteEl = document.getElementById("result-quote");
-const resultPeriodEl = document.getElementById("result-period");
-const resultCurrentEl = document.getElementById("result-current");
-const resultCurrentHighlightEl = document.getElementById("result-current-highlight");
-const resultTrendEl = document.getElementById("result-trend");
-const resultStartEl = document.getElementById("result-start");
-const resultChangeEl = document.getElementById("result-change");
-const resultPercentEl = document.getElementById("result-percent");
-const resultSourceEl = document.getElementById("result-source");
-const resultUpdatedEl = document.getElementById("result-updated");
-
-const reportResultEl = document.getElementById("report-result");
-const filenameEl = document.getElementById("filename");
-const filesizeEl = document.getElementById("filesize");
-const remainingEl = document.getElementById("remaining");
-const downloadEl = document.getElementById("download");
-const directDownloadEl = document.getElementById("direct-download");
-const downloadHelpEl = document.getElementById("download-help");
-const downloadUrlEl = document.getElementById("download-url");
-const copyDownloadUrlEl = document.getElementById("copy-download-url");
-
-let currentFile = null;
-let countdownTimer = null;
 let countdownConfig = {
   target_date: "2026-07-30",
   note: "",
@@ -61,25 +68,45 @@ let countdownConfig = {
 };
 let pendingCountdownConfig = null;
 let toastTimer = null;
+
 const countdownConfigStorageKey = "heartBabyCountdownConfig";
 const countdownSettingsStorageKey = "heartBabyCountdownSettings";
 const countdownStorageKey = "heartBabyCountdownTargetDate";
 const countdownNoteStorageKey = "heartBabyCountdownNote";
-const successStatusPattern = /完成|已生成|下载已开始|已复制/;
-const userAgent = navigator.userAgent || "";
-const isWeChatBrowser = /MicroMessenger/i.test(userAgent);
-const isMobileBrowser = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
+const successStatusPattern = /完成|成功|已保存/;
 
-if (window.location.protocol === "file:") {
-  setBusy(true);
-  setStatus("当前打开的是模板文件，按钮无法连接后端。请先运行 python3 app.py，然后访问 http://127.0.0.1:5000", true);
+function setStatus(element, message, isError = false) {
+  if (!element) {
+    return;
+  }
+
+  element.textContent = message;
+  element.classList.toggle("error", isError);
+  element.classList.toggle("success", !isError && successStatusPattern.test(message));
 }
 
-renderClientHint();
-loadLocalCountdownConfig();
-applyCountdownConfig(countdownConfig, false);
-hydrateCountdownConfig();
-syncModeUI();
+function setButtonLoading(button, text) {
+  if (!button) {
+    return;
+  }
+  if (!button.dataset.originalText) {
+    button.dataset.originalText = button.textContent;
+  }
+  button.textContent = text;
+  button.disabled = true;
+  button.classList.add("is-loading");
+}
+
+function clearButtonLoading(button) {
+  if (!button) {
+    return;
+  }
+  if (button.dataset.originalText) {
+    button.textContent = button.dataset.originalText;
+  }
+  button.disabled = false;
+  button.classList.remove("is-loading");
+}
 
 function formatDateInputValue(date) {
   const year = date.getFullYear();
@@ -137,7 +164,7 @@ function loadLocalCountdownConfig() {
       return;
     }
   } catch (error) {
-    // Ignore invalid local data and fall back to defaults.
+    // 本地缓存异常时直接使用默认值。
   }
 
   try {
@@ -148,11 +175,9 @@ function loadLocalCountdownConfig() {
       love_start_date: legacy.loveStartDate,
     });
   } catch (error) {
-    const legacyTarget = localStorage.getItem(countdownStorageKey);
-    const legacyNote = localStorage.getItem(countdownNoteStorageKey);
     countdownConfig = normalizeCountdownConfig({
-      target_date: legacyTarget,
-      note: legacyNote,
+      target_date: localStorage.getItem(countdownStorageKey),
+      note: localStorage.getItem(countdownNoteStorageKey),
     });
   }
 }
@@ -172,7 +197,7 @@ function persistCountdownConfigLocal(config) {
       localStorage.removeItem(countdownNoteStorageKey);
     }
   } catch (error) {
-    // Storage can be unavailable in some privacy modes; the backend remains the source of truth.
+    // 部分浏览器隐私模式可能禁用 localStorage，后端数据库仍是主数据源。
   }
 }
 
@@ -246,7 +271,6 @@ function applyCountdownConfig(rawConfig, shouldPersistLocal = true) {
   if (shouldPersistLocal) {
     persistCountdownConfigLocal(countdownConfig);
   }
-  return true;
 }
 
 async function hydrateCountdownConfig() {
@@ -261,8 +285,9 @@ async function hydrateCountdownConfig() {
       throw new Error(payload.error || "读取配置失败");
     }
     applyCountdownConfig(payload);
+    setStatus(countdownStatusEl, "倒计时配置读取成功。");
   } catch (error) {
-    setStatus("倒计时配置读取失败，已使用本地显示。", true);
+    setStatus(countdownStatusEl, "倒计时配置读取失败，已使用本地显示。", true);
   }
 }
 
@@ -339,7 +364,7 @@ function openCountdownConfirm() {
   try {
     pendingCountdownConfig = collectEditorConfig();
   } catch (error) {
-    setStatus(error.message, true);
+    setStatus(countdownStatusEl, error.message, true);
     return;
   }
 
@@ -389,7 +414,6 @@ async function confirmSaveCountdownConfig() {
     return;
   }
 
-  countdownConfirmSaveEl.disabled = true;
   setButtonLoading(countdownConfirmSaveEl, "保存中...");
 
   try {
@@ -409,13 +433,12 @@ async function confirmSaveCountdownConfig() {
       countdownModalEl.hidden = true;
     }
     setModalOpenState();
-    setStatus("倒计时配置已保存。");
+    setStatus(countdownStatusEl, "倒计时配置已保存。");
     showSaveToast("保存成功");
   } catch (error) {
-    setStatus(error.message || "保存失败，请稍后重试。", true);
+    setStatus(countdownStatusEl, error.message || "保存失败，请稍后重试。", true);
   } finally {
     clearButtonLoading(countdownConfirmSaveEl);
-    countdownConfirmSaveEl.disabled = false;
   }
 }
 
@@ -423,94 +446,23 @@ function saveCountdownSettings() {
   openCountdownConfirm();
 }
 
-function setBusy(isBusy) {
-  queryRateEl.disabled = isBusy;
-  generateExchangeReportEl.disabled = isBusy;
-}
-
-function setStatus(message, isError = false) {
-  statusBox.textContent = message;
-  statusBox.classList.toggle("error", isError);
-  statusBox.classList.toggle("success", !isError && successStatusPattern.test(message));
-}
-
-function renderClientHint() {
-  if (isWeChatBrowser) {
-    clientHintEl.textContent = "请点击右上角，在 Safari/Chrome 浏览器中打开后下载。";
-    clientHintEl.hidden = false;
-    return;
-  }
-
-  if (isMobileBrowser) {
-    clientHintEl.textContent = "如果无法直接下载，请点击浏览器分享按钮，选择存储到文件。";
-    clientHintEl.hidden = false;
-  }
-}
-
-function setButtonLoading(button, text) {
-  if (!button.dataset.originalText) {
-    button.dataset.originalText = button.textContent;
-  }
-  button.textContent = text;
-  button.classList.add("is-loading");
-}
-
-function clearButtonLoading(button) {
-  if (button.dataset.originalText) {
-    button.textContent = button.dataset.originalText;
-  }
-  button.classList.remove("is-loading");
-}
-
-function getSelectedMode() {
-  const selected = document.querySelector("input[name='query-mode']:checked");
-  return selected ? selected.value : "online";
-}
-
-function setSelectedMode(mode) {
-  const option = document.querySelector(`input[name='query-mode'][value='${mode}']`);
-  if (option) {
-    option.checked = true;
-  }
-  syncModeUI();
-}
-
-// 根据查询方式显示对应控件：在线查询不出现报表下载入口。
-function syncModeUI() {
-  const mode = getSelectedMode();
-  const isReportMode = mode === "report";
-  reportFormatFieldEl.hidden = !isReportMode;
-  queryRateEl.hidden = isReportMode;
-  generateExchangeReportEl.hidden = !isReportMode;
-
-  if (!isReportMode) {
-    clearReport();
-  } else if (!currentFile) {
-    downloadEl.hidden = true;
-  }
-}
-
-function getExchangePayload() {
-  return {
-    from: fromCurrencyEl.value,
-    to: toCurrencyEl.value,
-    period: periodEl.value,
-  };
-}
-
-function getReportPayload() {
-  return {
-    ...getExchangePayload(),
-    format: reportFormatEl.value,
-  };
-}
-
 function formatRate(value) {
   return typeof value === "number" ? value.toFixed(6) : "-";
 }
 
-function formatPercent(value) {
+function formatPrice(value, digits = 2) {
+  return typeof value === "number" ? value.toLocaleString("zh-CN", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }) : "-";
+}
+
+function formatPercentRatio(value) {
   return typeof value === "number" ? `${(value * 100).toFixed(2)}%` : "-";
+}
+
+function formatPercentPoints(value) {
+  return typeof value === "number" ? `${value >= 0 ? "+" : ""}${value.toFixed(2)}%` : "-";
 }
 
 function formatSignedRate(value) {
@@ -520,7 +472,14 @@ function formatSignedRate(value) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(6)}`;
 }
 
-function describeTrend(data) {
+function formatSignedPrice(value) {
+  if (typeof value !== "number") {
+    return "-";
+  }
+  return `${value >= 0 ? "+" : ""}${formatPrice(value)}`;
+}
+
+function describeExchangeTrend(data) {
   if (data.period === "realtime" || typeof data.change_percent !== "number") {
     return { text: "实时查询", className: "neutral" };
   }
@@ -535,42 +494,33 @@ function describeTrend(data) {
   return { text: "波动较小", className: "neutral" };
 }
 
-function formatRemaining(seconds) {
-  const safeSeconds = Math.max(0, seconds);
-  const minutes = Math.floor(safeSeconds / 60);
-  const rest = safeSeconds % 60;
-  return `${minutes}:${String(rest).padStart(2, "0")}`;
-}
-
-function clearReport() {
-  currentFile = null;
-  reportResultEl.hidden = true;
-  downloadEl.hidden = true;
-  directDownloadEl.hidden = true;
-  directDownloadEl.removeAttribute("href");
-  downloadHelpEl.hidden = true;
-  downloadUrlEl.value = "";
-  if (countdownTimer) {
-    clearInterval(countdownTimer);
-    countdownTimer = null;
+function describeGoldTrend(data) {
+  if (typeof data.change_percent !== "number") {
+    return { text: "实时价格", className: "neutral" };
   }
+
+  if (data.change_percent > 0.05) {
+    return { text: "上涨", className: "up" };
+  }
+  if (data.change_percent < -0.05) {
+    return { text: "下跌", className: "down" };
+  }
+  return { text: "波动较小", className: "neutral" };
 }
 
-function expireDownload() {
-  downloadEl.hidden = false;
-  downloadEl.disabled = true;
-  downloadEl.classList.add("disabled");
-  downloadEl.textContent = "文件已过期，请重新生成";
-  directDownloadEl.hidden = true;
-  directDownloadEl.removeAttribute("href");
-  downloadHelpEl.hidden = true;
-  downloadUrlEl.value = "";
-  remainingEl.textContent = "已过期";
-  setStatus("文件已过期，请重新生成。", true);
+function getExchangePayload() {
+  return {
+    from: fromCurrencyEl.value,
+    to: toCurrencyEl.value,
+    period: periodEl.value,
+  };
 }
 
-// 渲染在线汇率结果，只更新页面，不生成任何文件。
 function renderRateResult(data) {
+  if (!rateResultEl) {
+    return;
+  }
+
   rateResultEl.hidden = false;
   resultBaseEl.textContent = data.base;
   resultQuoteEl.textContent = data.quote;
@@ -580,7 +530,7 @@ function renderRateResult(data) {
   resultSourceEl.textContent = data.source;
   resultUpdatedEl.textContent = data.updated_at;
 
-  const trend = describeTrend(data);
+  const trend = describeExchangeTrend(data);
   resultTrendEl.textContent = trend.text;
   resultTrendEl.className = `trend-badge ${trend.className}`;
 
@@ -592,57 +542,21 @@ function renderRateResult(data) {
   if (!isRealtime) {
     resultStartEl.textContent = formatRate(data.start_rate);
     resultChangeEl.textContent = formatSignedRate(data.change_amount);
-    resultPercentEl.textContent = formatPercent(data.change_percent);
+    resultPercentEl.textContent = formatPercentRatio(data.change_percent);
   }
 }
 
-function renderFile(file) {
-  currentFile = file;
-  reportResultEl.hidden = false;
-  filenameEl.textContent = file.filename;
-  filesizeEl.textContent = file.size_label || "-";
-  downloadEl.hidden = false;
-  downloadEl.disabled = false;
-  downloadEl.textContent = "下载报表";
-  downloadEl.classList.remove("disabled");
-
-  const absoluteDownloadUrl = new URL(file.download_url, window.location.origin).href;
-  directDownloadEl.href = absoluteDownloadUrl;
-  directDownloadEl.download = file.filename;
-  directDownloadEl.hidden = false;
-  downloadUrlEl.value = absoluteDownloadUrl;
-  downloadHelpEl.hidden = false;
-
-  if (countdownTimer) {
-    clearInterval(countdownTimer);
-  }
-
-  const expiresAt = new Date(file.expires_at).getTime();
-  const tick = () => {
-    const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
-    remainingEl.textContent = formatRemaining(remaining);
-    if (remaining <= 0) {
-      clearInterval(countdownTimer);
-      expireDownload();
-    }
-  };
-
-  tick();
-  countdownTimer = setInterval(tick, 1000);
-}
-
-// 在线查询接口：只返回 JSON 数据，不写入 reports 文件夹。
 async function queryExchangeRate() {
-  setSelectedMode("online");
-  clearReport();
+  if (!fromCurrencyEl || !toCurrencyEl || !periodEl || !queryRateEl) {
+    return;
+  }
+
   setButtonLoading(queryRateEl, "查询中...");
-  setBusy(true);
-  setStatus("正在查询汇率...");
+  setStatus(exchangeStatusEl, "正在查询汇率...");
 
   if (fromCurrencyEl.value === toCurrencyEl.value) {
     clearButtonLoading(queryRateEl);
-    setBusy(false);
-    setStatus("基准货币和目标货币不能相同。", true);
+    setStatus(exchangeStatusEl, "基准货币和目标货币不能相同。", true);
     return;
   }
 
@@ -657,103 +571,83 @@ async function queryExchangeRate() {
       throw new Error(payload.error || "查询失败");
     }
     renderRateResult(payload.data);
-    setStatus("汇率查询完成。");
+    setStatus(exchangeStatusEl, "汇率查询完成。");
   } catch (error) {
-    setStatus("服务连接失败，请刷新页面或稍后重试。", true);
+    setStatus(exchangeStatusEl, "服务连接失败，请刷新页面或稍后重试。", true);
   } finally {
     clearButtonLoading(queryRateEl);
-    setBusy(false);
   }
 }
 
-// 报表生成接口：根据当前格式生成 Excel 或 Word，并返回下载链接。
-async function generateExchangeReport() {
-  setSelectedMode("report");
-  setButtonLoading(generateExchangeReportEl, "生成中...");
-  setBusy(true);
-  setStatus("正在生成报表...");
-
-  if (fromCurrencyEl.value === toCurrencyEl.value) {
-    clearButtonLoading(generateExchangeReportEl);
-    setBusy(false);
-    setStatus("基准货币和目标货币不能相同。", true);
+function renderGoldResult(data) {
+  if (!goldResultEl) {
     return;
   }
 
+  goldResultEl.hidden = false;
+  goldSymbolResultEl.textContent = data.symbol || "-";
+  goldPriceHighlightEl.textContent = formatPrice(data.price_usd_oz);
+  goldPriceEl.textContent = formatPrice(data.price_usd_oz);
+  goldChangeEl.textContent = formatSignedPrice(data.change);
+  goldPercentEl.textContent = formatPercentPoints(data.change_percent);
+  goldOpenEl.textContent = formatPrice(data.open);
+  goldHighEl.textContent = formatPrice(data.high);
+  goldLowEl.textContent = formatPrice(data.low);
+  goldPreviousCloseEl.textContent = formatPrice(data.previous_close);
+  goldUsdCnyEl.textContent = formatPrice(data.usd_cny, 4);
+  goldCnyGramEl.textContent = formatPrice(data.price_cny_gram);
+  goldSourceEl.textContent = data.source || "-";
+  goldUpdatedEl.textContent = data.updated_at || "-";
+
+  const trend = describeGoldTrend(data);
+  goldTrendEl.textContent = trend.text;
+  goldTrendEl.className = `trend-badge ${trend.className}`;
+}
+
+async function queryGoldPrice() {
+  if (!queryGoldEl) {
+    return;
+  }
+
+  setButtonLoading(queryGoldEl, "查询中...");
+  setStatus(goldStatusEl, "正在查询金价...");
+
   try {
-    const response = await fetch("/api/exchange-report", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(getReportPayload()),
+    const params = new URLSearchParams({
+      symbol: goldSymbolEl ? goldSymbolEl.value : "GC=F",
     });
+    const response = await fetch(`/api/gold-price?${params.toString()}`, { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok || !payload.success) {
-      throw new Error(payload.error || "生成失败");
+      throw new Error(payload.error || "查询失败");
     }
-    renderFile(payload.file || {
-      filename: payload.filename,
-      download_url: payload.download_url,
-      size_label: "-",
-      expires_at: new Date(Date.now() + (window.REPORT_TTL_SECONDS || 600) * 1000).toISOString(),
-    });
-    setStatus("报表已生成，点击下载报表。");
+    renderGoldResult(payload);
+    setStatus(goldStatusEl, "金价查询完成。");
   } catch (error) {
-    setStatus("服务连接失败，请刷新页面或稍后重试。", true);
+    setStatus(goldStatusEl, "金价数据获取失败，请稍后重试。", true);
   } finally {
-    clearButtonLoading(generateExchangeReportEl);
-    setBusy(false);
+    clearButtonLoading(queryGoldEl);
   }
 }
 
-// 使用临时 a 标签触发浏览器下载，兼容桌面和手机浏览器。
-function downloadCurrentFile() {
-  if (!currentFile || downloadEl.disabled) {
-    setStatus("文件已过期，请重新生成。", true);
-    return;
-  }
-
-  if (isWeChatBrowser) {
-    setStatus("请点击右上角，在 Safari/Chrome 浏览器中打开后下载。", true);
-    return;
-  }
-
-  const link = document.createElement("a");
-  link.href = new URL(currentFile.download_url, window.location.origin).href;
-  link.download = currentFile.filename;
-  link.rel = "noopener";
-  link.style.display = "none";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-
-  if (isMobileBrowser) {
-    setStatus("下载已开始。如果无法直接下载，请点击浏览器分享按钮，选择存储到文件。");
-  } else {
-    setStatus("下载已开始。如果浏览器没有保存文件，请点击下方直接打开下载地址。");
-  }
+if (window.location.protocol === "file:") {
+  setStatus(exchangeStatusEl, "当前打开的是模板文件，按钮无法连接后端。请先运行 Flask 服务后访问本地网址。", true);
+  setStatus(goldStatusEl, "当前打开的是模板文件，按钮无法连接后端。请先运行 Flask 服务后访问本地网址。", true);
+  setStatus(countdownStatusEl, "当前打开的是模板文件，按钮无法连接后端。请先运行 Flask 服务后访问本地网址。", true);
 }
 
-async function copyDownloadUrl() {
-  if (!downloadUrlEl.value) {
-    setStatus("没有可复制的下载地址，请先生成报表。", true);
-    return;
-  }
-
-  try {
-    await navigator.clipboard.writeText(downloadUrlEl.value);
-    setStatus("下载地址已复制。请粘贴到 Safari 或 Chrome 地址栏打开。");
-  } catch (error) {
-    downloadUrlEl.focus();
-    downloadUrlEl.select();
-    document.execCommand("copy");
-    setStatus("下载地址已选中。如未自动复制，请手动复制后粘贴到 Safari 或 Chrome。");
-  }
+if (queryRateEl) {
+  queryRateEl.addEventListener("click", queryExchangeRate);
+}
+if (queryGoldEl) {
+  queryGoldEl.addEventListener("click", queryGoldPrice);
 }
 
-queryRateEl.addEventListener("click", queryExchangeRate);
-generateExchangeReportEl.addEventListener("click", generateExchangeReport);
-downloadEl.addEventListener("click", downloadCurrentFile);
-copyDownloadUrlEl.addEventListener("click", copyDownloadUrl);
+if (countdownDaysEl || loveDaysEl) {
+  loadLocalCountdownConfig();
+  applyCountdownConfig(countdownConfig, false);
+  hydrateCountdownConfig();
+}
 if (countdownEditEl) {
   countdownEditEl.addEventListener("click", openCountdownEditor);
 }
@@ -792,8 +686,4 @@ document.addEventListener("keydown", (event) => {
   if (countdownModalEl && !countdownModalEl.hidden) {
     closeCountdownEditor();
   }
-});
-
-document.querySelectorAll("input[name='query-mode']").forEach((option) => {
-  option.addEventListener("change", syncModeUI);
 });

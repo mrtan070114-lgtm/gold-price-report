@@ -6,22 +6,225 @@
     <title>BA心BY</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/site-logo.png') }}?v=2" />
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='assets/site-logo.png') }}?v=2" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=19" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=25" />
   </head>
-  <body>
+  <body data-tool="{{ active_tool|default('home') }}">
     <main class="page">
-      <section class="app-shell" aria-label="汇率查询与报表下载工具">
-        <section class="tool-card" aria-labelledby="exchange-title">
-          <header class="app-header">
-            <div class="brand-copy">
-              <p class="eyebrow">JINGXING BABY</p>
-              <h1 class="brand-title">
+      <section class="app-shell" aria-label="心宝工具箱">
+        <section class="tool-card">
+          {% if active_tool == "home" %}
+            <header class="app-header home-header">
+              <div class="brand-copy">
+                <p class="eyebrow">JINGXING BABY</p>
+                <h1 class="brand-title">
+                  <img class="site-logo" src="{{ url_for('static', filename='assets/site-logo.png') }}" alt="" aria-hidden="true" />
+                  <span class="brand-name">心宝工具箱</span>
+                </h1>
+                <p class="summary">汇率、金价、倒计时和更多小工具都在这里。</p>
+              </div>
+            </header>
+
+            <section class="home-countdown-strip" aria-label="今日小记">
+              <div class="love-day" aria-label="恋爱日">
+                <span class="countdown-label">恋爱日</span>
+                <strong><span>第</span><span id="love-days">-</span><span>天</span></strong>
+              </div>
+              <a class="date-countdown home-target-card" href="/tools/countdown" aria-label="打开倒计时工具">
+                <div class="countdown-card-top">
+                  <span class="countdown-label">目标日</span>
+                  <span class="countdown-edit">管理</span>
+                </div>
+                <span class="countdown-caption" id="countdown-target-label">7月30日</span>
+                <strong><span id="countdown-days">-</span><span>天</span></strong>
+                <span class="note-pill" id="countdown-note-display" hidden></span>
+              </a>
+            </section>
+          {% else %}
+            <header class="tool-page-header">
+              <a class="mini-brand" href="/">
                 <img class="site-logo" src="{{ url_for('static', filename='assets/site-logo.png') }}" alt="" aria-hidden="true" />
-                <span class="brand-name">心宝</span>
-              </h1>
-              <p class="summary">心宝的专属汇率查询工具。</p>
+                <span>心宝工具箱</span>
+              </a>
+              <a class="back-home" href="/">返回首页</a>
+            </header>
+          {% endif %}
+
+          {% if active_tool == "home" %}
+            <section class="toolbox-grid" aria-label="工具列表">
+              <a class="toolbox-card" href="/tools/exchange">
+                <span class="toolbox-icon">¥</span>
+                <strong>汇率查询</strong>
+                <span>全球货币汇率在线查询，支持时间涨跌幅查看。</span>
+                <em>打开工具</em>
+              </a>
+
+              <a class="toolbox-card" href="/tools/gold">
+                <span class="toolbox-icon">Au</span>
+                <strong>金价查询</strong>
+                <span>查询实时黄金价格，支持美元/盎司和人民币/克估算。</span>
+                <em>打开工具</em>
+              </a>
+
+              <a class="toolbox-card" href="/tools/countdown">
+                <span class="toolbox-icon">♡</span>
+                <strong>倒计时</strong>
+                <span>管理目标日期、恋爱日和备注。</span>
+                <em>打开工具</em>
+              </a>
+
+              <a class="toolbox-card is-disabled" href="/tools/unit" aria-label="单位换算，建设中">
+                <span class="toolbox-icon">cm</span>
+                <strong>单位换算</strong>
+                <span>常用单位换算工具，建设中。</span>
+                <em>打开工具</em>
+              </a>
+            </section>
+          {% endif %}
+
+          {% if active_tool == "exchange" %}
+            <section class="section-heading tool-hero">
+              <p class="section-kicker">Exchange Rate</p>
+              <h2>汇率查询</h2>
+              <p class="summary">全球货币汇率在线查询，支持时间涨跌幅查看。</p>
+            </section>
+
+            <div class="form-grid">
+              <label>
+                <span>From 基准货币</span>
+                <select id="from-currency">
+                  <option value="USD">USD 美元</option>
+                  <option value="CNY">CNY 人民币</option>
+                  <option value="MYR">MYR 马币</option>
+                  <option value="SGD" selected>SGD 新币</option>
+                </select>
+              </label>
+
+              <label>
+                <span>To 目标货币</span>
+                <select id="to-currency">
+                  <option value="CNY">CNY 人民币</option>
+                  <option value="USD">USD 美元</option>
+                  <option value="MYR" selected>MYR 马币</option>
+                  <option value="SGD">SGD 新币</option>
+                </select>
+              </label>
+
+              <label>
+                <span>时间范围</span>
+                <select id="period">
+                  <option value="realtime">实时</option>
+                  <option value="1D">1日</option>
+                  <option value="3D" selected>3日</option>
+                  <option value="1W">1周</option>
+                  <option value="1M">1个月</option>
+                  <option value="3M">3个月</option>
+                  <option value="1Y">1年</option>
+                  <option value="3Y">3年</option>
+                  <option value="5Y">5年</option>
+                  <option value="10Y">10年</option>
+                </select>
+              </label>
             </div>
-            <div class="header-side">
+
+            <div class="actions">
+              <button class="primary" id="query-rate" type="button">查询汇率</button>
+            </div>
+
+            <div class="status" id="exchange-status" role="status">请选择条件后查询汇率。</div>
+
+            <section class="rate-result" id="rate-result" hidden>
+              <div class="result-card-heading">
+                <div>
+                  <p class="section-kicker">Result</p>
+                  <h3>查询结果</h3>
+                </div>
+                <span class="trend-badge neutral" id="result-trend">-</span>
+              </div>
+              <div class="rate-highlight">
+                <span class="label">当前汇率</span>
+                <strong id="result-current-highlight">-</strong>
+              </div>
+              <dl class="result-list">
+                <div><dt>基准货币</dt><dd id="result-base">-</dd></div>
+                <div><dt>目标货币</dt><dd id="result-quote">-</dd></div>
+                <div><dt>时间范围</dt><dd id="result-period">-</dd></div>
+                <div><dt>当前汇率</dt><dd id="result-current">-</dd></div>
+                <div class="period-only"><dt>起始汇率</dt><dd id="result-start">-</dd></div>
+                <div class="period-only"><dt>涨跌金额</dt><dd id="result-change">-</dd></div>
+                <div class="period-only"><dt>涨跌百分比</dt><dd id="result-percent">-</dd></div>
+                <div><dt>数据来源</dt><dd id="result-source">-</dd></div>
+                <div><dt>数据更新时间</dt><dd id="result-updated">-</dd></div>
+              </dl>
+            </section>
+          {% endif %}
+
+          {% if active_tool == "gold" %}
+            <section class="section-heading tool-hero">
+              <p class="section-kicker">Gold Price</p>
+              <h2>金价查询</h2>
+              <p class="summary">在线查询黄金价格，并估算人民币每克价格。</p>
+            </section>
+
+            <div class="form-grid">
+              <label>
+                <span>品种</span>
+                <select id="gold-symbol">
+                  <option value="GC=F" selected>黄金期货 / GC=F</option>
+                  <option value="XAUUSD">黄金现货 / XAUUSD</option>
+                </select>
+              </label>
+              <label>
+                <span>计价货币</span>
+                <select id="gold-currency" disabled>
+                  <option value="USD" selected>USD 美元/盎司</option>
+                  <option value="CNY">CNY 人民币/克估算</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="actions">
+              <button class="primary" id="query-gold" type="button">查询金价</button>
+            </div>
+
+            <div class="status" id="gold-status" role="status">点击按钮查询最新金价。</div>
+
+            <section class="rate-result gold-result" id="gold-result" hidden>
+              <div class="result-card-heading">
+                <div>
+                  <p class="section-kicker">Result</p>
+                  <h3>金价结果</h3>
+                </div>
+                <span class="trend-badge neutral" id="gold-trend">-</span>
+              </div>
+              <div class="rate-highlight">
+                <span class="label">当前黄金价格 USD/oz</span>
+                <strong id="gold-price-highlight">-</strong>
+              </div>
+              <dl class="result-list">
+                <div><dt>品种</dt><dd id="gold-symbol-result">-</dd></div>
+                <div><dt>当前黄金价格 USD/oz</dt><dd id="gold-price">-</dd></div>
+                <div><dt>涨跌金额</dt><dd id="gold-change">-</dd></div>
+                <div><dt>涨跌百分比</dt><dd id="gold-percent">-</dd></div>
+                <div><dt>今日开盘价</dt><dd id="gold-open">-</dd></div>
+                <div><dt>今日最高价</dt><dd id="gold-high">-</dd></div>
+                <div><dt>今日最低价</dt><dd id="gold-low">-</dd></div>
+                <div><dt>昨日收盘价</dt><dd id="gold-previous-close">-</dd></div>
+                <div><dt>USD/CNY 汇率</dt><dd id="gold-usd-cny">-</dd></div>
+                <div><dt>估算人民币/克</dt><dd id="gold-cny-gram">-</dd></div>
+                <div><dt>数据来源</dt><dd id="gold-source">-</dd></div>
+                <div><dt>更新时间</dt><dd id="gold-updated">-</dd></div>
+              </dl>
+            </section>
+          {% endif %}
+
+          {% if active_tool == "countdown" %}
+            <section class="section-heading tool-hero">
+              <p class="section-kicker">Countdown</p>
+              <h2>倒计时</h2>
+              <p class="summary">管理目标日期、恋爱日和备注。</p>
+            </section>
+
+            <section class="countdown-board" aria-label="倒计时信息">
               <div class="love-day" aria-label="恋爱日">
                 <span class="countdown-label">恋爱日</span>
                 <strong><span>第</span><span id="love-days">-</span><span>天</span></strong>
@@ -35,188 +238,77 @@
                 <strong><span id="countdown-days">-</span><span>天</span></strong>
                 <span class="note-pill" id="countdown-note-display" hidden></span>
               </div>
-            </div>
-          </header>
+            </section>
+            <div class="status" id="countdown-status" role="status">正在读取倒计时配置。</div>
+          {% endif %}
 
-          <div class="section-heading">
-            <p class="section-kicker">Exchange Rate</p>
-            <h2 id="exchange-title">汇率查询</h2>
-          </div>
-
-          <div class="form-grid">
-            <label>
-              <span>From 基准货币</span>
-              <select id="from-currency">
-                <option value="USD">USD 美元</option>
-                <option value="CNY">CNY 人民币</option>
-                <option value="MYR">MYR 马币</option>
-                <option value="SGD" selected>SGD 新币</option>
-              </select>
-            </label>
-
-            <label>
-              <span>To 目标货币</span>
-              <select id="to-currency">
-                <option value="CNY">CNY 人民币</option>
-                <option value="USD">USD 美元</option>
-                <option value="MYR" selected>MYR 马币</option>
-                <option value="SGD">SGD 新币</option>
-              </select>
-            </label>
-
-            <label>
-              <span>时间范围</span>
-              <select id="period">
-                <option value="realtime">实时</option>
-                <option value="1D">1日</option>
-                <option value="3D" selected>3日</option>
-                <option value="1W">1周</option>
-                <option value="1M">1个月</option>
-                <option value="3M">3个月</option>
-                <option value="1Y">1年</option>
-                <option value="3Y">3年</option>
-                <option value="5Y">5年</option>
-                <option value="10Y">10年</option>
-              </select>
-            </label>
-
-            <label id="report-format-field">
-              <span>报表格式</span>
-              <select id="report-format">
-                <option value="excel" selected>Excel</option>
-                <option value="word">Word</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="query-mode-card" role="radiogroup" aria-labelledby="query-mode-title">
-            <div class="section-label" id="query-mode-title">查询方式</div>
-            <div class="query-mode-options">
-              <label>
-                <input type="radio" name="query-mode" value="online" checked />
-                <span>在线查询</span>
-              </label>
-              <label>
-                <input type="radio" name="query-mode" value="report" />
-                <span>生成并下载报表</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="actions">
-            <button class="primary" id="query-rate" type="button">查询汇率</button>
-            <button class="secondary" id="generate-exchange-report" type="button">生成报表</button>
-            <button class="download" id="download" type="button" hidden>下载报表</button>
-          </div>
-
-          <div class="status" id="status" role="status">请选择条件后查询汇率。</div>
-          <div class="client-hint" id="client-hint" hidden></div>
-
-          <section class="rate-result" id="rate-result" hidden>
-            <div class="result-card-heading">
-              <div>
-                <p class="section-kicker">Result</p>
-                <h3>查询结果</h3>
+          {% if active_tool == "unit" %}
+            <section class="section-heading tool-hero">
+              <p class="section-kicker">Coming Soon</p>
+              <h2>单位换算</h2>
+              <p class="summary">常用单位换算工具，建设中。</p>
+            </section>
+            <section class="rate-result coming-soon">
+              <div class="rate-highlight">
+                <span class="label">建设中</span>
+                <strong>很快上线</strong>
               </div>
-              <span class="trend-badge neutral" id="result-trend">-</span>
-            </div>
-            <div class="rate-highlight">
-              <span class="label">当前汇率</span>
-              <strong id="result-current-highlight">-</strong>
-            </div>
-            <dl class="result-list">
-              <div><dt>基准货币</dt><dd id="result-base">-</dd></div>
-              <div><dt>目标货币</dt><dd id="result-quote">-</dd></div>
-              <div><dt>时间范围</dt><dd id="result-period">-</dd></div>
-              <div><dt>当前汇率</dt><dd id="result-current">-</dd></div>
-              <div class="period-only"><dt>起始汇率</dt><dd id="result-start">-</dd></div>
-              <div class="period-only"><dt>涨跌金额</dt><dd id="result-change">-</dd></div>
-              <div class="period-only"><dt>涨跌百分比</dt><dd id="result-percent">-</dd></div>
-              <div><dt>数据来源</dt><dd id="result-source">-</dd></div>
-              <div><dt>数据更新时间</dt><dd id="result-updated">-</dd></div>
-            </dl>
-          </section>
-
-          <section class="result" id="report-result" hidden>
-            <div class="result-main">
-              <span class="label">报表已生成</span>
-              <strong id="filename">-</strong>
-            </div>
-            <div class="meta-grid">
-              <div>
-                <span class="label">文件大小</span>
-                <span id="filesize">-</span>
-              </div>
-              <div>
-                <span class="label">剩余有效时间</span>
-                <span id="remaining">-</span>
-              </div>
-            </div>
-            <a class="fallback-download" id="direct-download" href="#" download target="_blank" rel="noopener" hidden>直接打开下载地址</a>
-            <div class="download-help" id="download-help" hidden>
-              <span class="label">下载地址</span>
-              <div class="copy-row">
-                <input id="download-url" type="text" readonly value="" />
-                <button class="secondary copy-button" id="copy-download-url" type="button">复制下载地址</button>
-              </div>
-              <p class="hint">如果当前浏览器没有保存文件，请把下载地址复制到 Safari 或 Chrome 打开。</p>
-            </div>
-          </section>
+              <p class="hint">这里会放常用单位换算工具。</p>
+            </section>
+          {% endif %}
         </section>
-
       </section>
 
-      <div class="countdown-modal" id="countdown-editor-modal" hidden>
-        <div class="countdown-modal-backdrop" data-countdown-close></div>
-        <section class="countdown-dialog" role="dialog" aria-modal="true" aria-labelledby="countdown-editor-title">
-          <div class="countdown-dialog-header">
-            <h3 id="countdown-editor-title">修改目标日</h3>
-            <button class="countdown-close" id="countdown-editor-close" type="button" aria-label="关闭">x</button>
-          </div>
-          <label class="countdown-picker">
-            <span>目标日期</span>
-            <input id="countdown-target-date" type="date" />
-          </label>
-          <label class="countdown-picker">
-            <span>恋爱开始日期</span>
-            <input id="love-start-date" type="date" />
-          </label>
-          <label class="countdown-picker">
-            <span>备注</span>
-            <textarea id="countdown-note" maxlength="100" rows="3" placeholder="倒计时备注"></textarea>
-          </label>
-          <div class="countdown-dialog-actions">
-            <button class="secondary" id="countdown-cancel" type="button">取消</button>
-            <button class="primary" id="countdown-save" type="button">保存</button>
-          </div>
-        </section>
-      </div>
+      {% if active_tool == "countdown" %}
+        <div class="countdown-modal" id="countdown-editor-modal" hidden>
+          <div class="countdown-modal-backdrop" data-countdown-close></div>
+          <section class="countdown-dialog" role="dialog" aria-modal="true" aria-labelledby="countdown-editor-title">
+            <div class="countdown-dialog-header">
+              <h3 id="countdown-editor-title">修改目标日</h3>
+              <button class="countdown-close" id="countdown-editor-close" type="button" aria-label="关闭">x</button>
+            </div>
+            <label class="countdown-picker">
+              <span>目标日期</span>
+              <input id="countdown-target-date" type="date" />
+            </label>
+            <label class="countdown-picker">
+              <span>恋爱开始日期</span>
+              <input id="love-start-date" type="date" />
+            </label>
+            <label class="countdown-picker">
+              <span>备注</span>
+              <textarea id="countdown-note" maxlength="100" rows="3" placeholder="倒计时备注"></textarea>
+            </label>
+            <div class="countdown-dialog-actions">
+              <button class="secondary" id="countdown-cancel" type="button">取消</button>
+              <button class="primary" id="countdown-save" type="button">保存</button>
+            </div>
+          </section>
+        </div>
 
-      <div class="countdown-modal confirm-modal" id="countdown-confirm-modal" hidden>
-        <div class="countdown-modal-backdrop" data-countdown-confirm-close></div>
-        <section class="countdown-dialog confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="countdown-confirm-title">
-          <div class="countdown-dialog-header">
-            <h3 id="countdown-confirm-title">确认保存修改？</h3>
-            <button class="countdown-close" id="countdown-confirm-close" type="button" aria-label="关闭">x</button>
-          </div>
-          <div class="confirm-summary">
-            <div><span>目标日期</span><strong id="confirm-target-date">-</strong></div>
-            <div><span>恋爱开始日期</span><strong id="confirm-love-start-date">-</strong></div>
-            <div><span>备注</span><strong id="confirm-note">-</strong></div>
-          </div>
-          <div class="countdown-dialog-actions">
-            <button class="secondary" id="countdown-confirm-cancel" type="button">取消</button>
-            <button class="primary" id="countdown-confirm-save" type="button">确认保存</button>
-          </div>
-        </section>
-      </div>
+        <div class="countdown-modal confirm-modal" id="countdown-confirm-modal" hidden>
+          <div class="countdown-modal-backdrop" data-countdown-confirm-close></div>
+          <section class="countdown-dialog confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="countdown-confirm-title">
+            <div class="countdown-dialog-header">
+              <h3 id="countdown-confirm-title">确认保存修改？</h3>
+              <button class="countdown-close" id="countdown-confirm-close" type="button" aria-label="关闭">x</button>
+            </div>
+            <div class="confirm-summary">
+              <div><span>目标日期</span><strong id="confirm-target-date">-</strong></div>
+              <div><span>恋爱开始日期</span><strong id="confirm-love-start-date">-</strong></div>
+              <div><span>备注</span><strong id="confirm-note">-</strong></div>
+            </div>
+            <div class="countdown-dialog-actions">
+              <button class="secondary" id="countdown-confirm-cancel" type="button">取消</button>
+              <button class="primary" id="countdown-confirm-save" type="button">确认保存</button>
+            </div>
+          </section>
+        </div>
 
-      <div class="save-toast" id="save-toast" role="status" hidden>保存成功</div>
+        <div class="save-toast" id="save-toast" role="status" hidden>保存成功</div>
+      {% endif %}
     </main>
 
-    <script>
-      window.REPORT_TTL_SECONDS = Number("{{ ttl_seconds|default(600) }}".replace(/\D/g, "")) || 600;
-    </script>
-    <script src="{{ url_for('static', filename='app.js') }}?v=19"></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=25"></script>
   </body>
 </html>
