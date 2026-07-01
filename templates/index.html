@@ -6,7 +6,7 @@
     <title>BA心BY</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/site-logo.png') }}?v=2" />
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='assets/site-logo.png') }}?v=2" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=18" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=19" />
   </head>
   <body>
     <main class="page">
@@ -217,6 +217,6 @@
     <script>
       window.REPORT_TTL_SECONDS = Number("{{ ttl_seconds|default(600) }}".replace(/\D/g, "")) || 600;
     </script>
-    <script src="{{ url_for('static', filename='app.js') }}?v=18"></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=19"></script>
   </body>
 </html>

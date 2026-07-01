@@ -62,7 +62,7 @@ class SettingsStore:
 
         with self.lock:
             if self.backend == "postgres":
-                stored = self._save_postgres_setting(COUNTDOWN_CONFIG_KEY, value, updated_at)
+                stored = self._save_postgres_setting(COUNTDOWN_CONFIG_KEY, value)
             else:
                 stored = self._save_sqlite_setting(COUNTDOWN_CONFIG_KEY, value, updated_at)
 
@@ -128,33 +128,36 @@ class SettingsStore:
                     return None
                 return {"value": row[0], "updated_at": row[1]}
 
-    def _save_postgres_setting(self, key: str, value: dict[str, str], updated_at: datetime) -> dict[str, Any]:
-        from psycopg2.extras import Json
-
+    def _save_postgres_setting(self, key: str, value: dict[str, str]) -> dict[str, Any]:
+        value_json = json.dumps(value, ensure_ascii=False)
         with self._connect_postgres() as conn:
             self._ensure_postgres_table(conn)
             with conn.cursor() as cur:
                 cur.execute(
                     """
                     UPDATE app_settings
-                    SET value = %s, updated_at = %s
+                    SET value = %s::jsonb,
+                        updated_at = now()
                     WHERE key = %s
-                    RETURNING value, updated_at
                     """,
-                    (Json(value), updated_at, key),
+                    (value_json, key),
                 )
-                row = cur.fetchone()
-                if not row:
+                if cur.rowcount == 0:
                     cur.execute(
                         """
                         INSERT INTO app_settings (key, value, updated_at)
-                        VALUES (%s, %s, %s)
-                        RETURNING value, updated_at
+                        VALUES (%s, %s::jsonb, now())
                         """,
-                        (key, Json(value), updated_at),
+                        (key, value_json),
                     )
-                    row = cur.fetchone()
-            conn.commit()
+
+                conn.commit()
+
+                cur.execute("SELECT value, updated_at FROM app_settings WHERE key = %s", (key,))
+                row = cur.fetchone()
+
+        if not row:
+            raise RuntimeError("保存后未能从数据库读取 countdown_config")
         return {"value": row[0], "updated_at": row[1]}
 
     def _connect_sqlite(self) -> sqlite3.Connection:

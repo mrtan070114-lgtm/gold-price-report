@@ -246,7 +246,7 @@ def update_countdown_config():
     except ConfigValidationError as exc:
         return jsonify({"success": False, "error": str(exc)}), 400
     except Exception as exc:
-        return jsonify({"success": False, "error": f"保存配置失败：{exc}"}), 500
+        return jsonify({"success": False, "error": str(exc)}), 500
 
 
 @app.get("/api/countdown-settings")

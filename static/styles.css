@@ -484,6 +484,12 @@ h3 {
   display: grid;
   place-items: center;
   padding: 16px;
+  width: 100vw;
+  max-width: 100vw;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .countdown-modal[hidden] {
@@ -507,6 +513,7 @@ h3 {
   z-index: 1;
   width: min(360px, 100%);
   max-width: 100%;
+  min-width: 0;
   display: grid;
   gap: 12px;
   padding: 20px;
@@ -1096,6 +1103,11 @@ button.is-loading {
 }
 
 @media (max-width: 768px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
     overflow-x: hidden;
@@ -1314,12 +1326,29 @@ button.is-loading {
   }
 
   .countdown-modal {
-    padding: 12px;
+    align-items: end;
+    padding: 12px max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    min-height: 100dvh;
   }
 
   .countdown-dialog {
-    width: min(100%, 390px);
+    width: 100%;
+    max-width: 390px;
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    justify-self: center;
+    overflow-x: hidden;
+    overflow-y: auto;
     padding: 18px;
+  }
+
+  .countdown-picker input,
+  .countdown-picker textarea,
+  .countdown-dialog-actions button {
+    font-size: 16px;
+  }
+
+  .countdown-picker textarea {
+    resize: none;
   }
 
   .result-card-heading {
